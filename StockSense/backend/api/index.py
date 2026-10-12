@@ -1,7 +1,8 @@
 """Vercel's entry point.
 
 Vercel looks for an ASGI application called `app` in this file and serves it.
-`vercel.json` rewrites every path here, so the routes are exactly the ones in
+The root `vercel.json` names this file as the backend service's entrypoint and
+sends every /api/* request here, so the routes are exactly the ones in
 `app/main.py` and nothing diverges between local and deployed.
 """
 

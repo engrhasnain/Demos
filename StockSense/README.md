@@ -183,19 +183,16 @@ backtest that lets the model see the answer will prove anything you like.
 
 ## Deploying to Vercel
 
-Two projects from this folder.
+**One project, zero setup.** New Project → import `engrhasnain/Demos` → Root
+Directory `StockSense` → Deploy. `vercel.json` serves the interface and the
+API (`/api/*`) from one address; no database or environment variables needed.
+The first request builds a compact demonstration company in temporary storage
+(it resets when the server restarts); sign in as
+`admin@hengtai-industrial.example` / `demo1234`.
 
-**Backend** — root directory `backend`. Already set up: `vercel.json` points
-at `api/index.py`. Set:
-
-| Variable | Value |
-|---|---|
-| `DATABASE_URL` | `postgresql+psycopg://…` — required; a function has no disk that survives |
-| `JWT_SECRET` | anything long and random; it refuses to start without one outside a demo |
-| `CORS_ORIGINS` | the interface's URL |
-
-**Interface** — root directory `frontend`. Set `NEXT_PUBLIC_API_URL` to the
-backend's URL.
+`JWT_SECRET` is optional for a demonstration; PostgreSQL (`DATABASE_URL`) is an
+optional upgrade that keeps the data. Details:
+[`docs/deploying-to-vercel.md`](docs/deploying-to-vercel.md).
 
 ---
 

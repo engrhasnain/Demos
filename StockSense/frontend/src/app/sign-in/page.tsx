@@ -89,6 +89,21 @@ export default function SignIn() {
 
   const empty = people !== null && people.length === 0;
 
+  // Open only while the database is empty; the server refuses it afterwards.
+  const [building, setBuilding] = useState(false);
+  const build = async () => {
+    setBuilding(true);
+    setError(null);
+    try {
+      await api.post("/api/demo/load", { size: "small" });
+      reload();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBuilding(false);
+    }
+  };
+
   return (
     <div className="ss-signin">
       <Band
@@ -174,15 +189,24 @@ export default function SignIn() {
                   No company loaded yet
                 </StatusChip>
                 <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.55 }}>
-                  Nobody can sign in until the company is built. From the project folder, run:
+                  Nobody can sign in until the company is built. Build a quick one here (1,500 parts), or from the
+                  project folder run:
                 </p>
                 <pre className="ss-command">python backend/scripts/walkthrough.py --small</pre>
                 <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--ds-text-2)" }}>
                   It loads the catalogue and checks the engine end to end. Drop the flag for all eighteen thousand parts.
                 </p>
-                <div style={{ marginTop: 14 }}>
+                <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  <Button tone="primary" onClick={build} disabled={building}>
+                    {building ? "Building the company..." : "Build the company"}
+                  </Button>
                   <Button onClick={reload}>Check again</Button>
                 </div>
+                {error && (
+                  <div style={{ marginTop: 10 }}>
+                    <ErrorNote error={error} />
+                  </div>
+                )}
               </div>
             </Reveal>
           ) : (

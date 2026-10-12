@@ -20,6 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .config import settings
 from .db import create_all
 from .routers import auth, catalogue, planning, system
+from .seed.autoload import ensure_demo_data
 
 
 log = logging.getLogger("stocksense")
@@ -43,6 +44,10 @@ async def lifespan(_app: FastAPI):
         log.warning("%s Fine for a demonstration, not for anything else.", problem)
 
     create_all()
+    # On Vercel with no database configured, build the demonstration
+    # company now so the first screen already has data. Does nothing
+    # locally, in tests, on PostgreSQL, or with AUTO_LOAD_DEMO_DATA=false.
+    ensure_demo_data()
     yield
 
 
@@ -63,6 +68,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _ready(request: Request, call_next):
+    # A host that does not run the lifespan still gets its tables and its
+    # demonstration data before the first request is answered. After the
+    # first call both are a flag check.
+    from starlette.concurrency import run_in_threadpool
+
+    await run_in_threadpool(_ensure_ready)
+    return await call_next(request)
+
+
+_tables_ready = False
+
+
+def _ensure_ready() -> None:
+    global _tables_ready
+    if not _tables_ready:
+        create_all()
+        _tables_ready = True
+    ensure_demo_data()
 
 
 # ---------------------------------------------------------------------------

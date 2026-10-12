@@ -26,7 +26,7 @@ from ..models import (
     Supplier,
     User,
 )
-from ..security import ROLE_LABELS, get_current_user, require_role
+from ..security import ROLE_LABELS, get_current_user, oauth2_scheme, require_role
 from ..seed import generator
 from ..serializers import dashboard
 from ..services.reorder import DECISION_LABELS, REASON_LABELS
@@ -151,11 +151,30 @@ SIZES: dict[str, tuple[int, int]] = {
 }
 
 
+def _may_load(
+    token: str | None = Depends(oauth2_scheme),
+    session: Session = Depends(get_session),
+) -> None:
+    """Open while the database is empty, administrator only after that.
+
+    With nobody in the database there is nobody who could sign in, so the
+    first load has to be possible without signing in. Once there is a
+    company, rebuilding it wipes everybody's work and only the
+    administrator may do it.
+    """
+    people = session.scalar(select(func.count(User.id))) or 0
+    parts = session.scalar(select(func.count(Part.id))) or 0
+    if people == 0 and parts == 0:
+        return
+    user = get_current_user(token=token, session=session)
+    require_role("administrator")(user=user)
+
+
 @router.post("/demo/load")
 def load_demo(
     body: LoadRequest,
     session: Session = Depends(get_session),
-    _user: User = Depends(require_role("administrator")),
+    _allowed: None = Depends(_may_load),
 ) -> dict[str, Any]:
     parts, suppliers = SIZES.get(body.size, SIZES["full"])
     if settings.is_serverless and parts > 6_000:

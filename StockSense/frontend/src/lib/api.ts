@@ -5,6 +5,9 @@
  * the server turns into a sentence a person can read.
  */
 
+// Empty in production builds (frontend/.env.production): the backend is
+// served from the same origin under /api, so requests stay relative. Local
+// `npm run dev` falls back to the local backend.
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8002";
 
@@ -110,6 +113,9 @@ export async function request<T>(
       cache: "no-store",
     });
   } catch (cause) {
+    if (!API_URL) {
+      throw new ApiError(0, "The server did not answer. Please try again in a moment.", cause);
+    }
     const port = (() => {
       try {
         return new URL(API_URL).port || "8002";

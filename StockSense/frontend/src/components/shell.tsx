@@ -181,7 +181,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const notice =
     state?.storage_is_temporary
       ? {
-          text: "This copy keeps its data in temporary storage: a restart starts it empty.",
+          text: "Demonstration data — resets when the server restarts.",
           link: null,
         }
       : state && !state.loaded && pathname !== "/"
