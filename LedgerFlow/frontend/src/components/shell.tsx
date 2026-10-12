@@ -167,7 +167,7 @@ export function Shell({ children }: { children: ReactNode }) {
   };
 
   const notice = state?.storage_is_temporary
-    ? "This copy keeps its data in the function's scratch space. It goes away when the function does."
+    ? "Demonstration data — resets when the server restarts."
     : null;
 
   const nav = NAV.map((item) => ({

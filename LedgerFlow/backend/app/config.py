@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # SQLite by default so a reviewer needs nothing installed.
     database_url: str = f"sqlite:///{(DATA_DIR / 'ledgerflow.db').as_posix()}"
 
+    #: On serverless hosting with no DATABASE_URL, build the smaller company
+    #: and run the batch when a fresh instance starts, so the link opens on
+    #: data. Never happens locally or in the tests.
+    auto_load_demo_data: bool = True
+
     jwt_secret: str = "demo-only-change-me-in-production"
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 12 * 60

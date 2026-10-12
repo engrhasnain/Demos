@@ -14,11 +14,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from .config import settings
-from .db import create_all
+from .seed import autoload
 from .routers import auth, demo, evaluation, invoices, system, vendors
 from .services.pipeline import PipelineError
 from .services.posting import LedgerUnavailable
@@ -29,9 +30,6 @@ log = logging.getLogger("ledgerflow")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Creating the tables is cheap and idempotent. On serverless hosting the
-    # scratch disk starts empty on a cold start, so this is what makes the
-    # first request work at all.
     # A demonstration may run on the published defaults. Anything calling
     # itself something else may not: a known signing secret is a way in.
     problems = settings.insecure_defaults
@@ -44,7 +42,11 @@ async def lifespan(_app: FastAPI):
     for problem in problems:
         log.warning("%s Fine for a demonstration, not for anything else.", problem)
 
-    create_all()
+    # Creating the tables is cheap and idempotent. On serverless hosting the
+    # scratch disk starts empty on a cold start, so this is what makes the
+    # first request work at all, and with no DATABASE_URL it also loads the
+    # demonstration data (see app/seed/autoload.py).
+    await run_in_threadpool(autoload.prepare)
     yield
 
 
@@ -57,6 +59,15 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     redoc_url=None,
 )
+
+@app.middleware("http")
+async def _ready_first(request: Request, call_next):
+    # Belt and braces for a host that skips the lifespan: the first request
+    # waits for the tables and the data instead of finding neither.
+    if not autoload.ready:
+        await run_in_threadpool(autoload.prepare)
+    return await call_next(request)
+
 
 app.add_middleware(
     CORSMiddleware,

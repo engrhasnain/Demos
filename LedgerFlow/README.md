@@ -156,23 +156,13 @@ A second signature always has to come from somebody other than the first.
 
 ## Deploying to Vercel
 
-Two projects from this one repository.
-
-**Backend** — root directory `backend`. It is already set up: `vercel.json`
-points at `api/index.py`, which exports the same application. Set:
-
-| Variable | Value |
-|---|---|
-| `DATABASE_URL` | `postgresql+psycopg://…` — required; a serverless function has no disk that survives |
-| `JWT_SECRET` | anything long and random |
-| `CORS_ORIGINS` | the interface's URL |
-
-**Interface** — root directory `frontend`. Set `NEXT_PUBLIC_API_URL` to the
-backend's URL.
-
-Without `DATABASE_URL` the backend still runs, on SQLite in the function's
-scratch space, and the first screen says so: the data goes away when the
-function does.
+One project, no setup: import the repository, set **Root Directory** to
+`LedgerFlow`, press **Deploy**. `vercel.json` serves the interface and the
+backend from one URL (`/api/*` goes to the backend), and a fresh instance
+builds the demonstration data itself in about 3 seconds, so you can sign in
+straight away. The data resets when the server restarts; set `DATABASE_URL`
+to a PostgreSQL database to keep it. Details:
+[`docs/deploying-to-vercel.md`](docs/deploying-to-vercel.md).
 
 ---
 
@@ -181,7 +171,8 @@ function does.
 | Variable | Default | What it does |
 |---|---|---|
 | `DATABASE_URL` | SQLite in `backend/var` | Where the data lives |
-| `JWT_SECRET` | a demonstration value | Signs sign-in tokens |
+| `JWT_SECRET` | a demonstration value | Signs sign-in tokens (optional for a demonstration) |
+| `AUTO_LOAD_DEMO_DATA` | true | On Vercel without `DATABASE_URL`, load the demonstration data when an instance starts |
 | `AUTO_POST_CEILING_TWD` | 200,000 | Above this, somebody signs |
 | `TWO_STEP_APPROVAL_TWD` | 1,000,000 | Above this, two people sign |
 | `DEFAULT_TOLERANCE_PERCENT` | 2 | How far above the order a price may sit |

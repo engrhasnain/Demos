@@ -5,6 +5,8 @@
  * the server turns into a sentence a person can read.
  */
 
+/** Empty in a production build (frontend/.env.production): the API is on the
+ * same origin under /api, which Vercel routes to the backend service. */
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8001";
 
@@ -112,7 +114,9 @@ export async function request<T>(
   } catch (cause) {
     throw new ApiError(
       0,
-      `The backend at ${API_URL} did not answer. Start it with: uvicorn app.main:app --reload --port 8001 --app-dir backend`,
+      API_URL
+        ? `The backend at ${API_URL} did not answer. Start it with: uvicorn app.main:app --reload --port 8001 --app-dir backend`
+        : "The server did not answer. Try again in a moment.",
       cause,
     );
   }
