@@ -1,0 +1,5 @@
+# Everything in requirements.txt, plus what the tests need.
+-r requirements.txt
+
+pytest>=8.3,<9
+httpx>=0.28,<0.29

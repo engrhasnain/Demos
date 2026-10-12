@@ -1,0 +1,218 @@
+/*
+  Hengtai operations suite - design tokens.
+
+  Warm off-white work surfaces, deep ink #0D1B1B bands, Poppins,
+  square-cornered buttons, small mono uppercase labels and thin accent
+  rules. One file of variables, shared by all six products.
+
+  A product changes exactly one thing: its accent (data-product on <html>,
+  which selects one of the blocks below). Everything else - ink bands, work
+  surfaces, semantic colours, type, shape and motion - is the suite and
+  stays identical from product to product.
+
+  Rules this file encodes:
+  - Solid colours. Bands are opaque ink, work surfaces are opaque warm
+    paper, cards are white with a 1px line. No gradient text, no glass, no
+    haze. The one sanctioned glow is on small canvas nodes.
+  - The product accent is for the one thing that matters on a screen and
+    for anything that can be pressed. Semantic colours are for verdicts only.
+  - Text on light surfaces uses the "-ink" variant of a colour (AA 4.5:1 on
+    the page colour). Fills carry dark ink text (--ds-on-*) unless stated.
+*/
+
+:root {
+  /* ---------------------------------------------------------------- */
+  /* Ink bands: hero, page top bands, call to action, trace header     */
+  /* ---------------------------------------------------------------- */
+  --ds-ink: #0d1b1b; /* deep ink */
+  --ds-ink-2: #132424; /* card on a band */
+  --ds-ink-3: #1b2e2e; /* hover on a band */
+  --ds-ink-line: #283b3b; /* 1px line on a band */
+  --ds-ink-text: #f6f3ee; /* text on a band */
+  --ds-ink-muted: #a3afae; /* secondary text on a band (7.8:1) */
+  --ds-ink-faint: #8a9897; /* mono labels on a band (5.9:1) */
+
+  /* ---------------------------------------------------------------- */
+  /* Work surfaces: warm off-white                        */
+  /* ---------------------------------------------------------------- */
+  --ds-page: #faf8f5;
+  --ds-surface: #ffffff;
+  --ds-sunk: #f2efea;
+  --ds-line: #e7e2da;
+  --ds-line-strong: #cfc8bd;
+  --ds-text: #021318; /* heading ink */
+  --ds-text-2: #4a5656; /* 7.2:1 on the page */
+  --ds-text-3: #5f6b6a; /* 5.2:1 on the page, for labels */
+
+  /* ---------------------------------------------------------------- */
+  /* ---------------------------------------------------------------- */
+
+  /* ---------------------------------------------------------------- */
+  /* Semantic colours, shared by the whole suite                       */
+  /* fill = solid chip or bar, ink = text on light, soft = solid tint  */
+  /* ---------------------------------------------------------------- */
+  --ds-pass: #22c55e;
+  --ds-pass-ink: #157a41;
+  --ds-pass-soft: #dcf5e5;
+  --ds-pass-rgb: 34, 197, 94;
+
+  --ds-fail: #f2555a;
+  --ds-fail-ink: #c2262b;
+  --ds-fail-soft: #fde3e3;
+  --ds-fail-rgb: 242, 85, 90;
+
+  --ds-warn: #f5a524; /* amber: kept clear of orange */
+  --ds-warn-ink: #8f5300;
+  --ds-warn-soft: #fff1d6;
+  --ds-warn-rgb: 245, 165, 36;
+
+  --ds-info: #5f6b6a;
+  --ds-info-ink: #4a5656;
+  --ds-info-soft: #eeebe5;
+  --ds-info-rgb: 163, 175, 174;
+
+  --ds-on-fill: #0d1b1b; /* text on any semantic fill */
+
+  /* ---------------------------------------------------------------- */
+  /* Product accent: QuoteAgent is orange.                  */
+  /* Each product overrides only these seven lines (see the            */
+  /* [data-product] blocks below and docs/design-system.md).           */
+  /* ---------------------------------------------------------------- */
+  --ds-accent: #f86f11;
+  --ds-accent-ink: #ad4700; /* 5.4:1 on the page */
+  --ds-accent-soft: #fff3ec;
+  --ds-accent-line: #fbb98a;
+  --ds-on-accent: #0d1b1b; /* 6.1:1 on the accent */
+  --ds-accent-rgb: 248, 111, 17;
+  --ds-accent-hi: #ff9a4d; /* brighter accent for nodes on ink */
+
+  /* ---------------------------------------------------------------- */
+  /* Type: Poppins for everything a person reads, a mono for data      */
+  /* The font variables are set by next/font in design/fonts.ts.       */
+  /* ---------------------------------------------------------------- */
+  --ds-font-display: var(--ds-face-ui, "Poppins"), ui-sans-serif, system-ui, "Segoe UI",
+    sans-serif;
+  --ds-font-ui: var(--ds-face-ui, "Poppins"), ui-sans-serif, system-ui, "Segoe UI",
+    "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+  --ds-font-mono: var(--ds-face-mono, "JetBrains Mono"), ui-monospace, "Cascadia Mono",
+    Consolas, monospace;
+
+  /* ---------------------------------------------------------------- */
+  /* Shape: square-cornered                              */
+  /* ---------------------------------------------------------------- */
+  --ds-radius: 4px; /* cards and panels */
+  --ds-radius-sm: 3px; /* inner tiles */
+  --ds-radius-control: 0px; /* buttons, inputs: square */
+  --ds-radius-chip: 3px; /* chips, eyebrows, stamps */
+  --ds-shadow-card: 0 1px 0 rgba(13, 27, 27, 0.04);
+  --ds-shadow-lift: 0 18px 40px -24px rgba(13, 27, 27, 0.45);
+  --ds-header-top: 30px; /* an optional strip above the header */
+  --ds-header-bar: 64px;
+  --ds-header-h: calc(var(--ds-header-top) + var(--ds-header-bar));
+
+  /* ---------------------------------------------------------------- */
+  /* Motion                                                            */
+  /* ---------------------------------------------------------------- */
+  --ds-ease: cubic-bezier(0.16, 1, 0.3, 1); /* expo-out, every entrance */
+  --ds-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ds-reveal-duration: 800ms;
+  --ds-reveal-y: 32px;
+  --ds-stagger: 70ms;
+  --ds-loop-pulse: 2.2s;
+}
+
+/* ------------------------------------------------------------------ */
+/* The other five accents, so a copied folder only needs data-product */
+/* ------------------------------------------------------------------ */
+:root[data-product="ledgerflow"] {
+  --ds-accent: #10b981;
+  --ds-accent-ink: #047857;
+  --ds-accent-soft: #d9f6ea;
+  --ds-accent-line: #7fdcbc;
+  --ds-on-accent: #0d1b1b;
+  --ds-accent-rgb: 16, 185, 129;
+  --ds-accent-hi: #4ee0ae;
+}
+:root[data-product="stocksense"] {
+  --ds-accent: #2f6bff;
+  --ds-accent-ink: #1d4ed8;
+  --ds-accent-soft: #e2eaff;
+  --ds-accent-line: #9db9ff;
+  --ds-on-accent: #ffffff;
+  --ds-accent-rgb: 47, 107, 255;
+  --ds-accent-hi: #7aa2ff;
+}
+:root[data-product="frontdeskai"] {
+  --ds-accent: #ff6b4a;
+  --ds-accent-ink: #b93a12;
+  --ds-accent-soft: #ffe6df;
+  --ds-accent-line: #ffb29f;
+  --ds-on-accent: #0d1b1b;
+  --ds-accent-rgb: 255, 107, 74;
+  --ds-accent-hi: #ff9a82;
+}
+:root[data-product="portalbot"] {
+  --ds-accent: #8b5cf6;
+  --ds-accent-ink: #6d28d9;
+  --ds-accent-soft: #ede5ff;
+  --ds-accent-line: #c4abfb;
+  --ds-on-accent: #0d1b1b;
+  --ds-accent-rgb: 139, 92, 246;
+  --ds-accent-hi: #b294ff;
+}
+:root[data-product="opsagent"] {
+  --ds-accent: #14b8a6;
+  --ds-accent-ink: #0f766e;
+  --ds-accent-soft: #d6f5f1;
+  --ds-accent-line: #7fdcd1;
+  --ds-on-accent: #0d1b1b;
+  --ds-accent-rgb: 20, 184, 166;
+  --ds-accent-hi: #5be3d3;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tailwind 4 mapping: bg-ink, text-accent-ink, border-line, font-mono */
+/* ------------------------------------------------------------------ */
+@theme inline {
+  --color-ink: var(--ds-ink);
+  --color-ink-2: var(--ds-ink-2);
+  --color-ink-3: var(--ds-ink-3);
+  --color-ink-line: var(--ds-ink-line);
+  --color-ink-text: var(--ds-ink-text);
+  --color-ink-muted: var(--ds-ink-muted);
+  --color-ink-faint: var(--ds-ink-faint);
+
+  --color-page: var(--ds-page);
+  --color-surface: var(--ds-surface);
+  --color-sunk: var(--ds-sunk);
+  --color-line: var(--ds-line);
+  --color-line-strong: var(--ds-line-strong);
+  --color-text: var(--ds-text);
+  --color-text-2: var(--ds-text-2);
+  --color-text-3: var(--ds-text-3);
+
+  --color-accent: var(--ds-accent);
+  --color-accent-ink: var(--ds-accent-ink);
+  --color-accent-soft: var(--ds-accent-soft);
+  --color-accent-line: var(--ds-accent-line);
+  --color-on-accent: var(--ds-on-accent);
+
+  --color-pass: var(--ds-pass);
+  --color-pass-ink: var(--ds-pass-ink);
+  --color-pass-soft: var(--ds-pass-soft);
+  --color-fail: var(--ds-fail);
+  --color-fail-ink: var(--ds-fail-ink);
+  --color-fail-soft: var(--ds-fail-soft);
+  --color-warn: var(--ds-warn);
+  --color-warn-ink: var(--ds-warn-ink);
+  --color-warn-soft: var(--ds-warn-soft);
+  --color-info: var(--ds-info);
+  --color-info-ink: var(--ds-info-ink);
+  --color-info-soft: var(--ds-info-soft);
+
+  --font-display: var(--ds-font-display);
+  --font-sans: var(--ds-font-ui);
+  --font-mono: var(--ds-font-mono);
+
+  --ease-out-expo: var(--ds-ease);
+}

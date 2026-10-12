@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Local data: SQLite databases and generated documents are created at runtime
+**/backend/var/
+*.db
+*.db-shm
+*.db-wal
+full-run.log
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+
+# Hosting and OS
+.vercel
+.DS_Store
+Thumbs.db
+*.stackdump
