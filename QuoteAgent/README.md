@@ -264,29 +264,28 @@ it.
 | `DATABASE_URL` | a SQLite file under `backend/var` | `postgresql+psycopg://…` for PostgreSQL |
 | `MODEL_API_KEY` | empty | Optional. Routes the reasoning step to an external model instead of the built-in one. |
 | `MODEL_NAME` | empty | Which model, when a key is set |
-| `JWT_SECRET` | a demonstration value | Change it for anything that is not a demonstration |
+| `JWT_SECRET` | a demonstration value | Optional for a demonstration; set it for anything else |
 | `DIRECTOR_APPROVAL_THRESHOLD_TWD` | 1,500,000 | Above this a director approves |
 | `DEFAULT_MARGIN_FLOOR_PERCENT` | 18 | Below this a sales manager approves |
-| `NEXT_PUBLIC_API_URL` | `http://127.0.0.1:8000` | Where the interface looks for the backend |
+| `AUTO_LOAD_DEMO_DATA` | on where storage is temporary (Vercel + SQLite), off elsewhere | `false` turns the start-up load off, `true` turns it on anywhere |
+| `NEXT_PUBLIC_API_URL` | `http://127.0.0.1:8000` in development; empty (same origin) in production builds | Where the interface looks for the backend |
 
 ---
 
 ## Deploying
 
-Both halves deploy to **Vercel**, as two projects out of this one repository.
+**One Vercel project, zero setup.** Import the repository, set the Root
+Directory to `QuoteAgent`, press Deploy. `vercel.json` runs the interface and
+the API as two services behind one URL (`/api/*` to the backend, everything
+else to the interface), so there is no CORS and no address to configure.
 
-| Project | Root directory | Needs |
-|---|---|---|
-| Interface | `MVP/QuoteAgent/frontend` | `NEXT_PUBLIC_API_URL` pointing at the backend |
-| Backend | `MVP/QuoteAgent/backend` | `DATABASE_URL` (PostgreSQL), `JWT_SECRET`, `CORS_ORIGINS` |
-
-A PostgreSQL database is required, because serverless functions have no disk
-that survives between requests. The product notices it is running serverless
-and adapts: the data loads inside the request rather than in a background
-thread, database connections are not pooled, documents are written to `/tmp`,
-and the smaller 2,000 part catalogue becomes the recommendation so a cold start
-does not spend seconds rebuilding the search index. If `DATABASE_URL` is
-missing, a warning bar on every screen says the data is in temporary storage.
+No database is needed: on Vercel the backend uses a SQLite file in `/tmp` and
+fills it with the demonstration data (1,000 parts, 80 customers, two dozen
+worked requests) on the first request after a start, so the site opens with
+data and `admin@hengtai-industrial.example` / `demo1234` signs in straight
+away. The data resets when the server restarts, and a thin bar says so.
+Setting `DATABASE_URL` to PostgreSQL (plus `JWT_SECRET`) is the optional
+upgrade that keeps it.
 
 Step by step, including what to do when it does not work:
 **[docs/deploying-to-vercel.md](docs/deploying-to-vercel.md)**.

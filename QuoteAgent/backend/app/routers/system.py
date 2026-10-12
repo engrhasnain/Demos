@@ -119,6 +119,20 @@ def _load(product_target: int, customer_target: int) -> None:
             LOAD_STATE.finished_at = dt.datetime.now(dt.timezone.utc).isoformat()
 
 
+def load_straight_through(
+    session: Session, product_target: int, customer_target: int, with_case_book: bool = True
+) -> dict[str, int]:
+    """The whole load inside one session, for serverless and for start-up."""
+    counts = generator.build_demo_data(
+        session, product_target=product_target, customer_target=customer_target
+    )
+    matching.reset_index()
+    matching.get_index(session, rebuild=True)
+    if with_case_book:
+        counts["worked_cases"] = len(casebook.build_case_book(session))
+    return counts
+
+
 def _database_is_empty(session: Session) -> bool:
     """No accounts and no company yet: a brand new database."""
     return all(
@@ -164,15 +178,9 @@ def load_demo_data(
     # it, so there would be nothing to report progress on. The load runs
     # inside the request instead and the interface is told not to poll.
     if settings.is_serverless:
-        counts = generator.build_demo_data(
-            session,
-            product_target=payload.product_target,
-            customer_target=payload.customer_target,
+        counts = load_straight_through(
+            session, payload.product_target, payload.customer_target, payload.with_case_book
         )
-        matching.reset_index()
-        matching.get_index(session, rebuild=True)
-        if payload.with_case_book:
-            counts["worked_cases"] = len(casebook.build_case_book(session))
         return {"started": True, "mode": "synchronous", "counts": counts}
 
     with LOAD_STATE.lock:
@@ -249,11 +257,10 @@ def status(session: Session = Depends(get_session)) -> dict[str, Any]:
         "database": "SQLite" if settings.uses_sqlite else "PostgreSQL",
         "hosting": "serverless" if settings.is_serverless else "a long running server",
         "storage_is_temporary": settings.storage_is_temporary,
+        # Temporary storage: the data is loaded on start-up and starts afresh
+        # whenever the server restarts. Setting DATABASE_URL to PostgreSQL keeps it.
         "storage_warning": (
-            "This deployment is running on serverless functions with a SQLite "
-            "file in temporary storage, so the demonstration data is lost when "
-            "the function is recycled. Set DATABASE_URL to a PostgreSQL database "
-            "to keep it."
+            "Demonstration data — resets when the server restarts."
             if settings.storage_is_temporary
             else ""
         ),

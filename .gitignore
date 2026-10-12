@@ -22,6 +22,8 @@ out/
 .env
 .env.*
 !.env.example
+# Not a secret: tells production builds to call the backend on the same origin.
+!**/frontend/.env.production
 
 # Hosting and OS
 .vercel

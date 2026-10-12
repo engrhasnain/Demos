@@ -5,6 +5,9 @@
  * the server turns into a sentence a person can read.
  */
 
+// Local development talks to the backend on port 8000. Production builds read
+// an empty value from frontend/.env.production and call /api/... on their own
+// origin, which vercel.json routes to the backend: no CORS, no address to set.
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
@@ -112,7 +115,9 @@ export async function request<T>(
   } catch (cause) {
     throw new ApiError(
       0,
-      `The backend at ${API_URL} did not answer. Start it with: uvicorn app.main:app --reload --app-dir backend`,
+      API_URL
+        ? `The backend at ${API_URL} did not answer. Start it with: uvicorn app.main:app --reload --app-dir backend`
+        : "The backend did not answer. It may still be starting; try again in a moment.",
       cause,
     );
   }

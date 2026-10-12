@@ -39,20 +39,19 @@ Open the interface, press **Load the demonstration data**, then sign in as
 
 ## Deploy on Vercel
 
-Each product is **two Vercel projects** from this one repository:
+Each product is **one Vercel project with zero setup**: no database to create, no environment variables.
 
-| Vercel project | Root directory | Environment variables |
-|---|---|---|
-| `<product>-backend` | `<Product>/backend` | `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS` |
-| `<product>` (interface) | `<Product>/frontend` | `NEXT_PUBLIC_API_URL` |
+1. **Add New… → Project**, import `engrhasnain/Demos`.
+2. **Root Directory:** the product folder, e.g. `QuoteAgent`. Leave everything else as it is.
+3. **Deploy**, open the URL and sign in as `admin@hengtai-industrial.example` with `demo1234`.
 
-- **A hosted PostgreSQL database is required.** Serverless functions have no disk that survives between requests,
-  so the local SQLite file cannot be used on Vercel. A free Neon or Vercel Postgres database works; use one
-  database per product and write the connection string as `postgresql+psycopg://user:password@host/database`.
-- Deploy the backend first, then set `NEXT_PUBLIC_API_URL` on the interface to the backend's address (no trailing
-  slash), then set `CORS_ORIGINS` on the backend to the interface's address and redeploy the backend.
-- Check the backend at `https://<backend>.vercel.app/api/health` — it should report PostgreSQL.
-- Open the interface, press **Load the demonstration data** and choose **A smaller set**, then sign in.
+The product's `vercel.json` runs the interface and the API as two Vercel services behind one URL: `/api/*` goes to
+the FastAPI backend, everything else to the Next.js interface, so there is no CORS and no backend address to set.
+The backend keeps a SQLite file in temporary storage and fills it with the demonstration data on the first request
+after a start, so it opens with data. The data is temporary and resets when the server restarts — fine for a
+demonstration.
 
-Step-by-step notes are in [`QuoteAgent/docs/deploying-to-vercel.md`](QuoteAgent/docs/deploying-to-vercel.md);
-the same steps apply to LedgerFlow and StockSense.
+**Optional upgrade:** to keep the data, set `DATABASE_URL` to a PostgreSQL database
+(`postgresql+psycopg://user:password@host/database`) and `JWT_SECRET` to a long random string, then redeploy.
+
+Details: [`QuoteAgent/docs/deploying-to-vercel.md`](QuoteAgent/docs/deploying-to-vercel.md).
