@@ -9,7 +9,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
-import { Band, Banner, Spinner } from "@/design/Surface";
+import { Band, Banner, Button, Spinner } from "@/design/Surface";
 import { StatusChip, type ChipTone } from "@/design/StatusChip";
 import { Reveal } from "@/design/Reveal";
 
@@ -272,9 +272,19 @@ export function Loading({ what, dark }: { what: string; dark?: boolean }) {
   );
 }
 
-export function ErrorNote({ error }: { error: string }) {
+export function ErrorNote({ error, onRetry }: { error: string; onRetry?: () => void }) {
   return (
-    <Banner tone="fail" title="That did not work">
+    <Banner
+      tone="fail"
+      title="That did not work"
+      action={
+        onRetry && (
+          <Button tone="secondary" size="small" onClick={onRetry}>
+            Retry
+          </Button>
+        )
+      }
+    >
       {error}
     </Banner>
   );

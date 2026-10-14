@@ -17,16 +17,6 @@ const NAV = [
   { href: "/evidence", label: "Evidence" },
 ];
 
-/** The six products of the suite, for the footer. */
-const SUITE = [
-  { name: "QuoteAgent", colour: "#f86f11" },
-  { name: "LedgerFlow", colour: "#10b981" },
-  { name: "StockSense", colour: "#2f6bff" },
-  { name: "FrontDeskAI", colour: "#ff6b4a" },
-  { name: "PortalBot", colour: "#8b5cf6", here: true },
-  { name: "OpsAgent", colour: "#14b8a6" },
-];
-
 /** The shared sign-in password of the sample staff, shown on the sign-in screen too. */
 export const STAFF_PASSWORD = "demo1234";
 
@@ -255,25 +245,6 @@ export function Shell({ children }: { children: ReactNode }) {
             <span style={{ fontSize: 13, color: "var(--ds-ink-muted)" }}>
               Fictional company, generated data, real logic. Every number opens.
             </span>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px" }}>
-            <span className="ds-mono-label">Hengtai operations suite</span>
-            {SUITE.map((product) => (
-              <span
-                key={product.name}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  fontSize: 12.5,
-                  fontWeight: product.here ? 700 : 500,
-                  color: product.here ? "var(--ds-ink-text)" : "var(--ds-ink-muted)",
-                }}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: product.colour }} aria-hidden />
-                {product.name}
-              </span>
-            ))}
           </div>
         </div>
       </footer>

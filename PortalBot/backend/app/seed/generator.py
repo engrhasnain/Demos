@@ -102,11 +102,27 @@ class Builder:
         self.today = today_date()
 
     def build(self) -> dict[str, int]:
+        self.build_users()
+        self.build_shipments()
+        return self.counts
+
+    def build_users(self) -> dict[str, int]:
+        """Clear the demo tables and seed sign-in accounts only.
+
+        Deliberately small and fast: callers racing a cold-start time
+        budget commit this phase on its own, so sign-in works even if
+        the heavier :meth:`build_shipments` phase is cut short.
+        """
         self._clear()
         self._staff()
+        self.session.flush()
+        return dict(self.counts)
+
+    def build_shipments(self) -> dict[str, int]:
+        """The heavier phase: the day's shipment rows."""
         self._shipments()
         self.session.flush()
-        return self.counts
+        return dict(self.counts)
 
     def _clear(self) -> None:
         for model in (Step, Challenge, ScriptFlag, Shipment, Run, EvaluationRun, User):

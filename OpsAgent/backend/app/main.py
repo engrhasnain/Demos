@@ -124,6 +124,19 @@ async def _database(_request: Request, error: SQLAlchemyError) -> JSONResponse:
     )
 
 
+@app.exception_handler(Exception)
+async def _unhandled(_request: Request, error: Exception) -> JSONResponse:
+    # The catch-all beneath the two above: anything neither of them is
+    # for — a cold-start import error, a bug — still comes back as clean
+    # JSON instead of a bare 500 with no body, and is logged server-side
+    # so there is something to look at afterwards.
+    log.exception("unhandled error", exc_info=error)
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_server_error", "message": str(error)},
+    )
+
+
 app.include_router(auth.router)
 app.include_router(operations.router)
 

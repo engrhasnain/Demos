@@ -12,8 +12,23 @@ type Loaded<T> = {
   setData: (value: T) => void;
 };
 
-/** Fetch once, with a reload handle and a readable error. */
-export function useLoad<T>(path: string | null, dependencies: unknown[] = []): Loaded<T> {
+/** Backoff delays (ms) for the opt-in auto-retry below. */
+const RETRY_DELAYS = [1500, 3000, 6000];
+
+/**
+ * Fetch once, with a reload handle and a readable error.
+ *
+ * Pass `{ autoRetry: true }` for a GET-shaped initial-state load that should
+ * quietly retry a few times (with backoff) before surfacing the error and
+ * handing control back to the caller's manual retry UI. Off by default so
+ * mutating/one-shot callers are unaffected.
+ */
+export function useLoad<T>(
+  path: string | null,
+  dependencies: unknown[] = [],
+  options: { autoRetry?: boolean } = {},
+): Loaded<T> {
+  const { autoRetry = false } = options;
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(Boolean(path));
@@ -27,26 +42,41 @@ export function useLoad<T>(path: string | null, dependencies: unknown[] = []): L
     }
     const attempt = ++latest.current;
     const controller = new AbortController();
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     setLoading(true);
     setError(null);
 
-    api
-      .get<T>(path, controller.signal)
-      .then((value) => {
-        if (attempt === latest.current) {
-          setData(value);
+    const attemptFetch = (retriesLeft: number) => {
+      api
+        .get<T>(path, controller.signal)
+        .then((value) => {
+          if (attempt === latest.current) {
+            setData(value);
+            setLoading(false);
+          }
+        })
+        .catch((cause: unknown) => {
+          if (controller.signal.aborted || attempt !== latest.current) return;
+          if (autoRetry && retriesLeft > 0) {
+            const delay = RETRY_DELAYS[RETRY_DELAYS.length - retriesLeft] ?? RETRY_DELAYS[RETRY_DELAYS.length - 1];
+            retryTimer = setTimeout(() => {
+              if (attempt === latest.current) attemptFetch(retriesLeft - 1);
+            }, delay);
+            return;
+          }
+          setError(cause instanceof ApiError ? cause.message : String(cause));
           setLoading(false);
-        }
-      })
-      .catch((cause: unknown) => {
-        if (controller.signal.aborted || attempt !== latest.current) return;
-        setError(cause instanceof ApiError ? cause.message : String(cause));
-        setLoading(false);
-      });
+        });
+    };
 
-    return () => controller.abort();
+    attemptFetch(autoRetry ? RETRY_DELAYS.length : 0);
+
+    return () => {
+      controller.abort();
+      if (retryTimer) clearTimeout(retryTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, nonce, ...dependencies]);
+  }, [path, nonce, autoRetry, ...dependencies]);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
   return { data, error, loading, reload, setData };

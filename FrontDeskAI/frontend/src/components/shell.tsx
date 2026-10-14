@@ -29,15 +29,6 @@ const CUSTOMER_NAV = [
 /** Customer pages need no sign-in: the chat window is the front door. */
 const PUBLIC = ["/chat", "/line", "/sign-in"];
 
-const SUITE = [
-  { name: "QuoteAgent", colour: "#f86f11" },
-  { name: "LedgerFlow", colour: "#10b981" },
-  { name: "StockSense", colour: "#2f6bff" },
-  { name: "FrontDesk", colour: "#ff6b4a", here: true },
-  { name: "PortalBot", colour: "#8b5cf6" },
-  { name: "OpsAgent", colour: "#14b8a6" },
-];
-
 export function BrandMark({ size = 32 }: { size?: number }) {
   // Two channels meeting at one ringed assistant.
   return (
@@ -239,17 +230,6 @@ function Footer({ staff }: { staff: boolean }) {
             Hengtai Industrial Supply is a fictional company · generated records, real logic
           </span>
         </div>
-        {staff && (
-          <div className="fd-footer-suite">
-            <span className="ds-mono-label">Hengtai operations suite</span>
-            {SUITE.map((product) => (
-              <span key={product.name} className="fd-footer-product" data-here={product.here ? "" : undefined}>
-                <span style={{ background: product.colour }} aria-hidden />
-                {product.name}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </footer>
   );

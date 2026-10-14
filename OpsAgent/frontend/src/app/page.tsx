@@ -59,7 +59,11 @@ const PROPERTIES = [
 
 export default function Overview() {
   const { user, checked } = useSession();
-  const { data: state, reload: reloadState } = useLoad<DemoState>("/api/demo/state");
+  const {
+    data: state,
+    error: stateError,
+    reload: reloadState,
+  } = useLoad<DemoState>("/api/demo/state", [], { retry: true });
   const { data: health } = useLoad<Health>("/api/health", [user?.email]);
   const [firstRun, setFirstRun] = useState<boolean | null>(null);
   const peopleData = usePeople();
@@ -89,6 +93,20 @@ export default function Overview() {
   }, [reloadState]);
 
   if (!state || firstRun === null) {
+    if (stateError) {
+      return (
+        <Band top>
+          <div className="oa-hero" style={{ display: "grid", placeItems: "center" }}>
+            <Card title="Couldn't load" className="oa-load-error">
+              <p style={{ margin: "0 0 14px" }}>The overview could not reach the server. Nothing was lost.</p>
+              <button type="button" className="ds-btn" data-tone="primary" data-size="small" onClick={reloadState}>
+                Retry
+              </button>
+            </Card>
+          </div>
+        </Band>
+      );
+    }
     return (
       <Band top>
         <div className="oa-hero" aria-busy="true" />

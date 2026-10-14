@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import threading
+import time
 from decimal import Decimal
 from typing import Any
 
@@ -33,6 +35,17 @@ from ..seed import casebook, generator
 from ..services import casestate, matching, reasoning
 
 router = APIRouter(prefix="/api/system", tags=["System"])
+
+log = logging.getLogger("quoteagent.system")
+
+#: Vercel's own function timeout is set to 60 seconds (see backend/vercel.json).
+#: The accounts and catalogue that `generator.build_demo_data` seeds first are
+#: what sign-in and a quote actually need; the worked case book that comes
+#: after it is a nice-to-have inbox, not a requirement. Giving it its own
+#: budget, measured from when the synchronous (serverless) load started,
+#: means a slow cold start can cut it short without the request itself
+#: timing out and taking the whole response down with it.
+SEED_TIME_BUDGET_SECONDS = 25.0
 
 
 # ---------------------------------------------------------------------------
@@ -119,20 +132,6 @@ def _load(product_target: int, customer_target: int) -> None:
             LOAD_STATE.finished_at = dt.datetime.now(dt.timezone.utc).isoformat()
 
 
-def load_straight_through(
-    session: Session, product_target: int, customer_target: int, with_case_book: bool = True
-) -> dict[str, int]:
-    """The whole load inside one session, for serverless and for start-up."""
-    counts = generator.build_demo_data(
-        session, product_target=product_target, customer_target=customer_target
-    )
-    matching.reset_index()
-    matching.get_index(session, rebuild=True)
-    if with_case_book:
-        counts["worked_cases"] = len(casebook.build_case_book(session))
-    return counts
-
-
 def _database_is_empty(session: Session) -> bool:
     """No accounts and no company yet: a brand new database."""
     return all(
@@ -178,9 +177,36 @@ def load_demo_data(
     # it, so there would be nothing to report progress on. The load runs
     # inside the request instead and the interface is told not to poll.
     if settings.is_serverless:
-        counts = load_straight_through(
-            session, payload.product_target, payload.customer_target, payload.with_case_book
+        started = time.monotonic()
+        counts = generator.build_demo_data(
+            session,
+            product_target=payload.product_target,
+            customer_target=payload.customer_target,
         )
+        # Accounts (and the rest of the catalogue sign-in and pricing need)
+        # are seeded inside build_demo_data before anything else, specifically
+        # so that a slow cold start which only gets this far still leaves
+        # sign-in working. See generator.DemoDataBuilder.build for the order.
+        matching.reset_index()
+        matching.get_index(session, rebuild=True)
+
+        elapsed = time.monotonic() - started
+        if payload.with_case_book:
+            remaining = SEED_TIME_BUDGET_SECONDS - elapsed
+            if remaining > 0:
+                counts["worked_cases"] = len(casebook.build_case_book(session))
+            else:
+                log.warning(
+                    "Skipping the demonstration case book: the catalogue and "
+                    "account seed already took %.1fs, over the %.1fs budget "
+                    "left for the heavier, optional worked inbox. Sign-in and "
+                    "the catalogue are already loaded; load the case book "
+                    "again afterwards if it is needed.",
+                    elapsed,
+                    SEED_TIME_BUDGET_SECONDS,
+                )
+                counts["worked_cases"] = 0
+                counts["case_book_skipped"] = True
         return {"started": True, "mode": "synchronous", "counts": counts}
 
     with LOAD_STATE.lock:
@@ -257,10 +283,11 @@ def status(session: Session = Depends(get_session)) -> dict[str, Any]:
         "database": "SQLite" if settings.uses_sqlite else "PostgreSQL",
         "hosting": "serverless" if settings.is_serverless else "a long running server",
         "storage_is_temporary": settings.storage_is_temporary,
-        # Temporary storage: the data is loaded on start-up and starts afresh
-        # whenever the server restarts. Setting DATABASE_URL to PostgreSQL keeps it.
         "storage_warning": (
-            "Demonstration data — resets when the server restarts."
+            "This deployment is running on serverless functions with a SQLite "
+            "file in temporary storage, so the demonstration data is lost when "
+            "the function is recycled. Set DATABASE_URL to a PostgreSQL database "
+            "to keep it."
             if settings.storage_is_temporary
             else ""
         ),

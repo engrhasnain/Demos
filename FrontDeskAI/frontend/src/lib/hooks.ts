@@ -12,13 +12,25 @@ type Loaded<T> = {
   setData: (value: T) => void;
 };
 
+const RETRY_DELAYS_MS = [1500, 3000, 6000];
+
+type UseLoadOptions = {
+  /** Opt-in: on initial fetch failure, auto-retry with backoff (~1.5s/3s/6s) before surfacing an error. */
+  retry?: boolean;
+};
+
 /** Fetch once, with a reload handle and a readable error. */
-export function useLoad<T>(path: string | null, dependencies: unknown[] = []): Loaded<T> {
+export function useLoad<T>(
+  path: string | null,
+  dependencies: unknown[] = [],
+  options: UseLoadOptions = {},
+): Loaded<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(Boolean(path));
   const [nonce, setNonce] = useState(0);
   const latest = useRef(0);
+  const retry = options.retry ?? false;
 
   useEffect(() => {
     if (!path) {
@@ -27,26 +39,42 @@ export function useLoad<T>(path: string | null, dependencies: unknown[] = []): L
     }
     const attempt = ++latest.current;
     const controller = new AbortController();
+    const timeouts: number[] = [];
     setLoading(true);
     setError(null);
 
-    api
-      .get<T>(path, controller.signal)
-      .then((value) => {
-        if (attempt === latest.current) {
-          setData(value);
+    const attemptFetch = (retriesLeft: number) => {
+      api
+        .get<T>(path, controller.signal)
+        .then((value) => {
+          if (attempt === latest.current) {
+            setData(value);
+            setLoading(false);
+          }
+        })
+        .catch((cause: unknown) => {
+          if (controller.signal.aborted || attempt !== latest.current) return;
+          if (retry && retriesLeft > 0) {
+            const delay = RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - retriesLeft] ?? RETRY_DELAYS_MS.at(-1)!;
+            const handle = window.setTimeout(() => {
+              if (attempt === latest.current) attemptFetch(retriesLeft - 1);
+            }, delay);
+            timeouts.push(handle);
+            return;
+          }
+          setError(cause instanceof ApiError ? cause.message : String(cause));
           setLoading(false);
-        }
-      })
-      .catch((cause: unknown) => {
-        if (controller.signal.aborted || attempt !== latest.current) return;
-        setError(cause instanceof ApiError ? cause.message : String(cause));
-        setLoading(false);
-      });
+        });
+    };
 
-    return () => controller.abort();
+    attemptFetch(retry ? RETRY_DELAYS_MS.length : 0);
+
+    return () => {
+      controller.abort();
+      timeouts.forEach((handle) => window.clearTimeout(handle));
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, nonce, ...dependencies]);
+  }, [path, nonce, retry, ...dependencies]);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
   return { data, error, loading, reload, setData };

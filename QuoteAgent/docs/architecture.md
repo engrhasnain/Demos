@@ -178,18 +178,15 @@ is how people actually write.
 
 ## 8. Running it serverless
 
-Both halves deploy to Vercel as one project: `vercel.json` declares them as two
-services behind one URL, `/api/*` to the backend. Serverless is a different environment and the
+Both halves deploy to Vercel. Serverless is a different environment and the
 product checks for it rather than hoping: `settings.is_serverless` switches the
 data load from a background thread to inside the request (a thread does not
 outlive the invocation that started it), drops connection pooling for a null
 pool (a pooled connection to a frozen function is a connection the database
 holds open for nobody), moves generated documents to `/tmp`, and recommends the
 smaller catalogue so a cold start does not spend seconds rebuilding the search
-index from a remote database. If the database is still SQLite (the zero-setup
-default), the first request after a start fills it with the demonstration data
-(`app/bootstrap.py`, once per process, behind a lock) and every screen says
-the data resets when the server restarts.
+index from a remote database. If the database is still SQLite, every screen
+carries a warning that the data is in temporary storage.
 
 See [deploying-to-vercel.md](deploying-to-vercel.md).
 

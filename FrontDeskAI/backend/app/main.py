@@ -116,6 +116,19 @@ async def _database(_request: Request, error: SQLAlchemyError) -> JSONResponse:
     )
 
 
+@app.exception_handler(Exception)
+async def _unhandled(_request: Request, error: Exception) -> JSONResponse:
+    """The backstop. Anything not already caught above still gets a clean,
+    parseable JSON response instead of a bare 500 with no body - the shape
+    the frontend's error handling expects - and is always logged server-side
+    first so the real cause is not lost."""
+    log.exception("unhandled error", exc_info=error)
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_server_error", "message": str(error)},
+    )
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------

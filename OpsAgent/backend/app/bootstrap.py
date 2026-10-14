@@ -77,11 +77,23 @@ def _load_if_empty() -> None:
                 session,
                 customer_target=settings.auto_load_customer_target,
                 order_target=settings.auto_load_order_target,
+                time_budget_seconds=settings.seed_time_budget_seconds,
             )
-            counts["example_questions"] = ask_example_questions(session)
+            elapsed = time.perf_counter() - started
+            # The example questions read the business data the budget
+            # above may have skipped; past the same budget they would add
+            # nothing but delay, so only ask them when there is time left.
+            if elapsed < settings.seed_time_budget_seconds:
+                counts["example_questions"] = ask_example_questions(session)
+            else:
+                log.warning(
+                    "Skipping the example questions too: the seed already "
+                    "used its %.0f s budget.",
+                    settings.seed_time_budget_seconds,
+                )
         log.warning(
             "Loaded the demonstration data on start-up in %.1f s: %s",
-            time.perf_counter() - started,
+            elapsed,
             counts,
         )
 

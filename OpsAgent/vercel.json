@@ -9,6 +9,12 @@
       "entrypoint": "api/index.py"
     }
   },
+  "functions": {
+    "backend/api/index.py": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": { "service": "backend" } },
     { "source": "/(.*)", "destination": { "service": "frontend" } }

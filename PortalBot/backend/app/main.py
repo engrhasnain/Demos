@@ -8,6 +8,7 @@ there are no background threads and no scheduled work anywhere in here.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -49,6 +50,16 @@ async def lifespan(_app: FastAPI):
     yield
 
 
+#: Hard wall-clock budget for the one-time readiness/seed work, from this
+#: request's point of view. Comfortably inside a Vercel function's own
+#: maxDuration (see vercel.json), so a slow cold start times out here and
+#: lets the request through instead of being killed by the platform with
+#: a bare 500. The seed work keeps running in its background thread (see
+#: bootstrap.py); it commits demo sign-in accounts well before this fires,
+#: so sign-in still works even when this budget is exceeded.
+_READY_TIMEOUT_SECONDS = 25.0
+
+
 class ReadyBeforeFirstRequest:
     """Hold requests until the database is ready.
 
@@ -64,7 +75,29 @@ class ReadyBeforeFirstRequest:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http" and not bootstrap.is_ready():
-            await run_in_threadpool(bootstrap.ensure_ready)
+            try:
+                await asyncio.wait_for(
+                    run_in_threadpool(bootstrap.ensure_ready),
+                    timeout=_READY_TIMEOUT_SECONDS,
+                )
+            except (TimeoutError, asyncio.TimeoutError):
+                # bootstrap.ensure_ready() seeds demo accounts first and
+                # commits them on their own before doing anything heavier
+                # (see bootstrap._load_if_empty), so even cut short here
+                # sign-in already works; only the fuller demo dataset is
+                # still catching up in the background.
+                log.warning(
+                    "Database readiness/seeding exceeded %.0f s; letting the "
+                    "request through. Demo sign-in accounts seed first and "
+                    "should already be available.",
+                    _READY_TIMEOUT_SECONDS,
+                )
+            except Exception:  # pragma: no cover - ensure_ready already logs internally
+                log.exception(
+                    "Preparing the database failed; letting the request "
+                    "through so any failure surfaces per-request instead of "
+                    "here."
+                )
         await self.app(scope, receive, send)
 
 
@@ -112,6 +145,24 @@ async def _database(_request: Request, error: SQLAlchemyError) -> JSONResponse:
     return JSONResponse(
         status_code=500,
         content={"detail": "The database refused that. Nothing was changed."},
+    )
+
+
+@app.exception_handler(Exception)
+async def _unhandled(_request: Request, error: Exception) -> JSONResponse:
+    """The last resort.
+
+    Anything that reaches here would otherwise be a bare 500 with no body —
+    exactly what a cold-start crash on Vercel looks like from the frontend.
+    The real exception is logged in full server-side; what goes back to the
+    client is a message the existing retry/error UI (see ErrorNote in the
+    frontend) can show, not a stack trace.
+    """
+    log.exception("unhandled exception", exc_info=error)
+    message = str(error) or error.__class__.__name__
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_server_error", "message": message, "detail": message},
     )
 
 

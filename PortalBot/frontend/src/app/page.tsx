@@ -17,6 +17,7 @@ import { Figure } from "@/components/trace";
 import { ClosingBand, ErrorNote, Loading, ThesisStrip } from "@/components/ui";
 import { api, readUser } from "@/lib/api";
 import { buildFeed, openSamples, runScenario, type FeedEntry } from "@/lib/feed";
+import { useLoad, withRetry } from "@/lib/hooks";
 import type { DriveScenario } from "@/lib/scenario";
 import type { Challenge, Dashboard, DemoState, Flag, Health, Page, Run, ShipmentBrief, ShipmentDetail } from "@/lib/types";
 import { RUN_CHIP, clock, count, mayAct, runKinds } from "@/lib/words";
@@ -56,38 +57,44 @@ async function loadOverview(): Promise<Overview> {
 }
 
 export default function Control() {
-  const [state, setState] = useState<DemoState | null>(null);
   const [data, setData] = useState<Overview | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [restart, setRestart] = useState(false);
   const [nonce, setNonce] = useState(0);
   const refresh = useCallback(() => setNonce((value) => value + 1), []);
 
+  // The whole screen hangs off this one call, so a dropped connection should not leave it
+  // stuck on the placeholder forever: retry a few times with backoff before asking the person.
+  const { data: state, error: stateError, reload: reloadState } = useLoad<DemoState>("/api/demo/state", [nonce], {
+    retry: true,
+  });
+
   useEffect(() => {
+    if (!state || !state.loaded) return;
     let cancelled = false;
-    api
-      .get<DemoState>("/api/demo/state")
-      .then((value) => {
-        if (cancelled) return;
-        setState(value);
-        if (!value.loaded) return;
-        return loadOverview().then((overview) => {
-          if (!cancelled) {
-            setData(overview);
-            setError(null);
-          }
-        });
+    withRetry(loadOverview, () => cancelled)
+      .then((overview) => {
+        if (!cancelled) {
+          setData(overview);
+          setDataError(null);
+        }
       })
-      .catch((cause: unknown) => !cancelled && setError(cause instanceof Error ? cause.message : String(cause)));
+      .catch((cause: unknown) => {
+        if (!cancelled) setDataError(cause instanceof Error ? cause.message : String(cause));
+      });
     return () => {
       cancelled = true;
     };
-  }, [nonce]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, nonce]);
 
-  if (error && !data) {
+  if (stateError && !state) {
     return (
       <div className="ds-work">
-        <ErrorNote error={error} />
+        <ErrorNote error={stateError} />
+        <div style={{ marginTop: 16 }}>
+          <Button onClick={reloadState}>Retry</Button>
+        </div>
       </div>
     );
   }
@@ -108,7 +115,16 @@ export default function Control() {
   if (!data) {
     return (
       <Band top>
-        <Loading what="Reading today's rows" dark />
+        {dataError ? (
+          <div className="pb-hero" style={{ display: "grid", placeItems: "center", gap: 16, textAlign: "center" }}>
+            <ErrorNote error={dataError} />
+            <Button onClick={refresh}>Retry</Button>
+          </div>
+        ) : (
+          <div className="pb-hero" aria-busy="true">
+            <Loading what="Reading today's rows" dark />
+          </div>
+        )}
       </Band>
     );
   }

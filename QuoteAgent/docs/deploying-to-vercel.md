@@ -3,131 +3,128 @@
 Written for: whoever puts the demonstration on a URL the product owner can
 open.
 
-**One Vercel project, one URL, nothing to set up.** No database to create and
-no environment variables to fill in. The interface and the API deploy together
-from this folder and share one address.
+Two Vercel projects out of one repository: the Next.js interface and the
+FastAPI backend. They are deployed separately because they have different
+build systems, and the interface only needs to know the backend's address.
 
 ---
 
-## Deploy it (zero setup)
+## Before you start
 
-1. In Vercel: **Add New… → Project**, import the `engrhasnain/Demos` repository.
-2. **Root Directory:** `QuoteAgent`. Leave everything else as it is.
-3. Press **Deploy**.
+**You need a PostgreSQL database.** This is not optional on Vercel. Serverless
+functions have no disk that survives between requests, so the SQLite file the
+product uses locally would be gone by the next page load. Any hosted
+PostgreSQL works; Vercel Postgres and Neon both take about a minute to create
+and both give you a connection string.
 
-When it is live, open the URL and sign in as
-`admin@hengtai-industrial.example` with `demo1234`. The data is already
-there: the first request after a start fills the database with the
-demonstration data, so there is no "load the data" step.
-
-Sending somebody a link of the form
-`https://your-project.vercel.app/sign-in?as=paul.lee@hengtai-industrial.example`
-opens the demonstration directly in that role.
-
-**Check it:** `https://your-project.vercel.app/api/health` should answer
-`"status": "ready"`.
+The product tells you if you skip this: the status bar across every screen says
+the data is in temporary storage and will be lost.
 
 ---
 
-## How it works
+## 1. The backend
 
-`QuoteAgent/vercel.json` uses Vercel **services**:
+**Project root:** `MVP/QuoteAgent/backend`
 
-```json
-{
-  "services": {
-    "frontend": { "root": "frontend/" },
-    "backend": { "root": "backend/", "entrypoint": "api/index.py" }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": { "service": "backend" } },
-    { "source": "/(.*)", "destination": { "service": "frontend" } }
-  ]
-}
+Vercel detects the Python runtime from `requirements.txt`. The entry point is
+`api/index.py`, and `vercel.json` rewrites every path to it so FastAPI sees the
+original URL and all of its routes work unchanged.
+
+**Environment variables**
+
+| Name | Value | Needed |
+|---|---|---|
+| `DATABASE_URL` | `postgresql+psycopg://user:password@host/database` | **Yes.** Note the `+psycopg` — a plain `postgres://` string will not work. |
+| `JWT_SECRET` | a long random string | **Yes.** The default is a published demonstration value. |
+| `CORS_ORIGINS` | your interface URL, e.g. `https://quoteagent.vercel.app` | Recommended. Without it the backend accepts any origin, which is fine for a demonstration and wrong for anything else. |
+| `MODEL_API_KEY`, `MODEL_BASE_URL` | a model endpoint | Optional. Without them the built-in engine reads requests and everything still works. |
+
+If your provider gives you a `postgres://…` or `postgresql://…` string, change
+the scheme to `postgresql+psycopg://…` and keep the rest.
+
+**Check it**
+
+```
+https://your-backend.vercel.app/api/health
+https://your-backend.vercel.app/docs
 ```
 
-- **Same origin.** Every backend route already starts with `/api/`, so
-  `/api/*` goes to the FastAPI service and everything else to the Next.js
-  interface. `frontend/.env.production` sets `NEXT_PUBLIC_API_URL` to empty, so
-  the production interface calls `/api/...` on its own address: no CORS, no
-  backend address to configure. `npm run dev` still talks to
-  `http://127.0.0.1:8000`.
-- **Data with no database.** On Vercel the backend uses a SQLite file in
-  `/tmp`. On the first request after a start it creates the tables and, if the
-  database is empty, generates the demonstration data: 1,000 parts, 80
-  customers, the sales team and two dozen worked requests in every state. It is
-  generated rather than copied, so every date is relative to today. It takes
-  about ten seconds, once per server; requests that arrive meanwhile wait for
-  it.
-- **Temporary, and it says so.** Changes last as long as that server does.
-  When Vercel starts a new one, it starts again from fresh demonstration data.
-  A thin bar across the top says *Demonstration data — resets when the server
-  restarts.*
+`/api/health` should report `"database": "PostgreSQL"`. If it says SQLite, the
+`DATABASE_URL` has not reached the function.
 
-## Optional settings
+## 2. The interface
 
-None of these are needed for a demonstration.
+**Project root:** `MVP/QuoteAgent/frontend`
 
-| Name | What it does |
+Vercel detects Next.js and needs no configuration beyond one variable.
+
+| Name | Value |
 |---|---|
-| `JWT_SECRET` | Signs sign-in tokens. Optional for a demonstration (the published default is used and a warning is logged); set a long random string for anything else. |
-| `DATABASE_URL` | Keeps the data. See the upgrade below. |
-| `AUTO_LOAD_DEMO_DATA` | `false` stops the automatic load. `true` turns it on anywhere, including locally or on PostgreSQL (it only ever fills an empty database). |
-| `AUTO_LOAD_PRODUCT_TARGET`, `AUTO_LOAD_CUSTOMER_TARGET` | Size of the automatic load. Defaults 1000 and 80. Larger means a slower first request. |
-| `MODEL_API_KEY`, `MODEL_BASE_URL` | A hosted model for the reading step. Without them the built-in engine does it and everything still works. |
+| `NEXT_PUBLIC_API_URL` | `https://your-backend.vercel.app` — no trailing slash |
 
-Environment variables are read when the backend starts, so redeploy after
-changing one.
+It is read at build time, so changing it means redeploying the interface.
 
-## Optional upgrade: PostgreSQL, so the data persists
+## 3. Load the data
 
-1. Create a PostgreSQL database (Neon or Vercel Postgres take about a minute).
-2. In the project's **Settings → Environment Variables**, add `DATABASE_URL`.
-   Write the scheme as `postgresql+psycopg://user:password@host/database`; a
-   plain `postgres://` string will not work, so change the scheme and keep the
-   rest.
-3. Add `JWT_SECRET` as well, then redeploy.
-4. Open the site and press **Load the demonstration data** (choose **A smaller
-   set**), or set `AUTO_LOAD_DEMO_DATA=true` to have the first request do it.
+Open the interface, press **Load the demonstration data**, and choose **A
+smaller set**. On serverless hosting the load runs inside the request and the
+interface says so instead of showing a progress bar that has nothing behind it.
 
-`/api/health` then reports `"database": "PostgreSQL"` and the bar at the top
-disappears.
+Then sign in as `admin@hengtai-industrial.example` with `demo1234`. Sending
+somebody a link of the form
+`https://your-interface.vercel.app/sign-in?as=paul.lee@hengtai-industrial.example`
+opens the demonstration directly in that role.
 
 ---
 
 ## What changes when it runs on Vercel, and why
 
+Serverless is a genuinely different environment, and the product adapts to it
+rather than pretending not to notice.
+
 | | A long running server | Vercel |
 |---|---|---|
-| Database | SQLite file, no setup | SQLite in `/tmp`, filled on start; or PostgreSQL |
-| Loading the data | A button and a background load with a progress bar | Automatic on the first request; the button loads inside the request |
-| Catalogue size | 18,000 parts | 1,000 automatically, 2,000 with the button's smaller set |
+| Database | SQLite file, no setup | PostgreSQL, required |
+| Loading the data | A background thread with a progress bar | Inside the request; the bar is not shown |
+| Catalogue size | 18,000 parts | 2,000 is the default and the recommendation |
 | Documents | Written under `backend/var` | Written to `/tmp`, regenerated on demand |
 | Database connections | Pooled and recycled | One per invocation, returned immediately |
 
-**Why a smaller catalogue.** The matcher holds a search index in the function's
-memory and rebuilds it on every cold start. A thousand parts builds in about a
-second and every page stays quick. Run the full
+**Why the smaller catalogue.** The matcher holds a search index in the
+function's memory. A cold start rebuilds it, and over 18,000 parts and 29,000
+cross-references from a remote database that takes several seconds on the first
+request after an idle period. Two thousand parts rebuilds in a fraction of a
+second and every page stays quick. The hard cases in the demonstration all
+still fire: the sample request produces exactly the same thirty-three matched
+lines, four unclear, one self-contradicting and two not stocked. Run the full
 catalogue locally, or on any host that keeps a process alive.
 
+**Why a 60 second function.** `vercel.json` asks for 60 seconds and 1 GB,
+because loading the demonstration data and running the acceptance criteria are
+both longer than a page request. Everything else answers in well under a
+second. On a Hobby plan the ceiling is lower; the smaller catalogue keeps the
+load inside it.
+
 **Cold starts.** The first request after an idle period pays for the Python
-runtime, the import and the data load: expect ten to fifteen seconds once,
-then normal speed. A demonstration that matters is worth opening once
-beforehand.
+runtime, the import, and the index rebuild. Expect a second or two. A
+demonstration that matters is worth opening once beforehand.
 
 ---
 
 ## If something is wrong
 
-**The first page sits on loading for a while** — that is the first request
-filling the database. It happens once per server.
+**"The backend did not answer"** on every screen — `NEXT_PUBLIC_API_URL` is
+wrong, or it has a trailing slash, or the interface was built before the
+variable was set. Redeploy the interface.
 
-**"The backend did not answer"** — the backend service failed to start. Open
-the deployment's logs in Vercel and look at the backend function.
+**Sign-in works, every other call fails** — a CORS problem. Set `CORS_ORIGINS`
+on the backend to the exact interface origin, with no trailing slash.
 
-**Changes disappeared** — the server restarted and started again from fresh
-demonstration data. Use the PostgreSQL upgrade to keep them.
+**The data disappears** — `DATABASE_URL` is not set, so the product is using a
+SQLite file in temporary storage. The warning bar says this on every screen.
 
-**`ModuleNotFoundError: psycopg`** — the driver is in
-`backend/requirements.txt`, so this means the Root Directory is not
-`QuoteAgent`.
+**`ModuleNotFoundError: psycopg`** — the driver is in `requirements.txt`, so
+this means the backend project root is not `MVP/QuoteAgent/backend`.
+
+**The function times out while loading** — choose the smaller set, or raise
+`maxDuration` in `vercel.json` if your plan allows it.

@@ -10,7 +10,9 @@ only partly delivered, and a month that has already been closed.
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import random
+import time
 from decimal import Decimal
 from typing import Any, Callable
 
@@ -45,9 +47,20 @@ from ..models import (
 from ..money import money
 from ..security import hash_password
 
+log = logging.getLogger("ledgerflow")
+
 SEED = 20_261_006
 DEMO_PASSWORD = "demo1234"
 TODAY = today()
+
+#: How long the heavier stages of a rebuild may run before this gives up on
+#: them for this request. Entities, periods and the demo sign-in accounts
+#: always finish first and are never subject to this budget, so a slow cold
+#: start still leaves somebody able to sign in - it just means the suppliers,
+#: orders and deliveries did not finish loading and a retry (or the next
+#: call) picks up where this one gave up, rather than the request crashing
+#: or running into the platform's own hard timeout.
+DEFAULT_SEED_TIME_BUDGET_SECONDS = 22.0
 
 DEMO_USERS: list[dict[str, str]] = [
     {"email": "mei.kuo@hengtai-industrial.example", "full_name": "Mei Kuo",
@@ -117,6 +130,7 @@ class DemoDataBuilder:
         vendor_target: int = 140,
         order_target: int = 220,
         progress: ProgressCallback | None = None,
+        time_budget_seconds: float | None = DEFAULT_SEED_TIME_BUDGET_SECONDS,
     ) -> None:
         self.session = session
         self.random = random.Random(SEED)
@@ -124,6 +138,10 @@ class DemoDataBuilder:
         self.order_target = order_target
         self.progress = progress or (lambda *_: None)
         self.counts: dict[str, int] = {}
+        #: None disables the budget outright (tests build a known-small
+        #: dataset and want it to run to completion every time).
+        self.time_budget_seconds = time_budget_seconds
+        self._deadline: float | None = None
 
     # -- helpers ----------------------------------------------------------
     def _bulk(self, model: type, rows: list[dict[str, Any]], chunk: int = 2_000) -> None:
@@ -131,13 +149,51 @@ class DemoDataBuilder:
             self.session.bulk_insert_mappings(model, rows[start : start + chunk])
         self.session.flush()
 
+    def _within_budget(self, about_to: str) -> bool:
+        """Is there still time for the next stage?
+
+        Checked only between stages, never inside one: a stage either runs to
+        completion or does not start, so nothing is left half-written.
+        """
+        if self._deadline is None:
+            return True
+        remaining = self._deadline - time.monotonic()
+        if remaining <= 0:
+            log.warning(
+                "Demo data seed ran past its %.0fs time budget before %s. "
+                "Stopping here - the demo accounts and whatever loaded already "
+                "stand, and the request returns instead of risking the "
+                "platform's own hard timeout.",
+                self.time_budget_seconds,
+                about_to,
+            )
+            return False
+        return True
+
     def build(self) -> dict[str, int]:
+        self._deadline = (
+            time.monotonic() + self.time_budget_seconds
+            if self.time_budget_seconds is not None
+            else None
+        )
         self.wipe()
         self.build_entities()
         self.build_periods()
+        # Sign-in accounts first, always: everything after this point is
+        # business data a person can look at once signed in, not data a
+        # person needs in order to sign in at all.
         self.build_users()
+        if not self._within_budget("loading the suppliers"):
+            self.session.flush()
+            return self.counts
         vendors = self.build_vendors()
+        if not self._within_budget("loading purchase orders and deliveries"):
+            self.session.flush()
+            return self.counts
         self.build_orders_and_receipts(vendors)
+        if not self._within_budget("loading exchange rates"):
+            self.session.flush()
+            return self.counts
         self.build_rates()
         self.session.flush()
         return self.counts
@@ -479,10 +535,12 @@ def build_demo_data(
     vendor_target: int = 140,
     order_target: int = 220,
     progress: ProgressCallback | None = None,
+    time_budget_seconds: float | None = DEFAULT_SEED_TIME_BUDGET_SECONDS,
 ) -> dict[str, int]:
     return DemoDataBuilder(
         session,
         vendor_target=vendor_target,
         order_target=order_target,
         progress=progress,
+        time_budget_seconds=time_budget_seconds,
     ).build()

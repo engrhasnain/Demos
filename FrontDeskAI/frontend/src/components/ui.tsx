@@ -4,13 +4,17 @@
 
 import type { ReactNode } from "react";
 
-import { Banner, Spinner } from "@/design/Surface";
+import { Banner, Button, Spinner } from "@/design/Surface";
 import { StatusChip } from "@/design/StatusChip";
 import { OUTCOME_WORDS, channelWord, type Outcome } from "@/lib/format";
 
-export function ErrorNote({ error }: { error: string }) {
+export function ErrorNote({ error, onRetry }: { error: string; onRetry?: () => void }) {
   return (
-    <Banner tone="fail" title="That did not work">
+    <Banner
+      tone="fail"
+      title="That did not work"
+      action={onRetry && <Button onClick={onRetry} tone="secondary" size="small">Retry</Button>}
+    >
       {error}
     </Banner>
   );

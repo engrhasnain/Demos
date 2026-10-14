@@ -1,5 +1,5 @@
 /**
- * Hengtai operations suite - design system.
+ * Hengtai design system.
  *
  * Copy this whole folder into a product's src/, import tokens.css and
  * components.css from its globals.css, put `fontVariables` (from ./fonts,

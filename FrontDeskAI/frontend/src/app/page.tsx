@@ -33,7 +33,7 @@ import { useLoad } from "@/lib/hooks";
 import type { Conversation, ConversationBrief, Dashboard, DemoState, Page, Ticket, Visit } from "@/lib/types";
 
 export default function OverviewPage() {
-  const state = useLoad<DemoState>("/api/demo/state");
+  const state = useLoad<DemoState>("/api/demo/state", [], { retry: true });
   if (state.loading && !state.data) {
     return (
       <Band top>
@@ -44,7 +44,7 @@ export default function OverviewPage() {
   if (state.error) {
     return (
       <Band top>
-        <ErrorNote error={state.error} />
+        <ErrorNote error={state.error} onRetry={state.reload} />
       </Band>
     );
   }

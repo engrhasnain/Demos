@@ -31,7 +31,7 @@ import {
 } from "@/components/ui";
 
 export default function DeskPage() {
-  const state = useLoad<DemoState>("/api/demo/state");
+  const state = useLoad<DemoState>("/api/demo/state", [], { retry: true });
   const [rebuild, setRebuild] = useState(false);
 
   if (state.loading && !state.data) {
@@ -46,6 +46,11 @@ export default function DeskPage() {
       <Band top>
         <div style={{ padding: "24px 0" }}>
           <ErrorNote error={state.error} />
+          <div style={{ marginTop: 16 }}>
+            <Button tone="secondary" onClick={state.reload}>
+              Retry
+            </Button>
+          </div>
         </div>
       </Band>
     );

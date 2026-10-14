@@ -218,12 +218,28 @@ def _database_is_empty(session: Session) -> bool:
     )
 
 
-def load_straight_through(session: Session, customer_target: int, order_target: int) -> dict[str, int]:
-    """The whole load inside one session, for serverless and for start-up."""
+def load_straight_through(
+    session: Session,
+    customer_target: int,
+    order_target: int,
+    deadline: float | None = None,
+) -> dict[str, int]:
+    """The whole load inside one session, for serverless and for start-up.
+
+    ``deadline`` is an optional `time.monotonic()` instant past which the
+    heavier stages are skipped so the caller gets back a working database
+    (demo accounts included) instead of a timeout or a crash. Left as
+    ``None`` - the case for the manual "load demo data" screen - the load
+    always runs to completion.
+    """
     counts = generator.build_demo_data(
-        session, customer_target=customer_target, order_target=order_target
+        session,
+        customer_target=customer_target,
+        order_target=order_target,
+        deadline=deadline,
     )
-    counts.update(generator.build_sample_conversations(session))
+    if deadline is None or time.monotonic() <= deadline:
+        counts.update(generator.build_sample_conversations(session))
     return counts
 
 

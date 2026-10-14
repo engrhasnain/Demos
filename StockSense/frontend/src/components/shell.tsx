@@ -18,16 +18,6 @@ const NAV = [
   { href: "/evidence", label: "Evidence" },
 ];
 
-/** The six products of the suite, for the footer. */
-const SUITE = [
-  { name: "QuoteAgent", colour: "#f86f11" },
-  { name: "LedgerFlow", colour: "#10b981" },
-  { name: "StockSense", colour: "#2f6bff", here: true },
-  { name: "FrontDeskAI", colour: "#ff6b4a" },
-  { name: "PortalBot", colour: "#8b5cf6" },
-  { name: "OpsAgent", colour: "#14b8a6" },
-];
-
 /**
  * The mark: a part's year at a glance. Two dark weeks, a spike, a dark
  * week, a smaller sale: intermittent demand in four strokes.
@@ -181,7 +171,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const notice =
     state?.storage_is_temporary
       ? {
-          text: "Demonstration data — resets when the server restarts.",
+          text: "This copy keeps its data in temporary storage: a restart starts it empty.",
           link: null,
         }
       : state && !state.loaded && pathname !== "/"
@@ -245,15 +235,6 @@ export function Shell({ children }: { children: ReactNode }) {
                 Every number opens to show how it was worked out.
               </span>
             </span>
-          </div>
-          <div className="ss-suite">
-            <span className="ds-mono-label">Hengtai operations suite</span>
-            {SUITE.map((product) => (
-              <span key={product.name} className="ss-suite-item" data-here={product.here ? "" : undefined}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: product.colour }} aria-hidden />
-                {product.name}
-              </span>
-            ))}
           </div>
         </div>
       </footer>

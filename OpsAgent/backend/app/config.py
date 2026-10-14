@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     auto_load_demo_data: str = ""
     auto_load_customer_target: int = 60
     auto_load_order_target: int = 280
+    #: How long the first-request seed may spend on the heavier business
+    #: data (parts, orders, invoices, …) before it stops and lets the
+    #: request through with the demo accounts already in place. Keeps a
+    #: cold start under a serverless function's own time limit instead of
+    #: being killed mid-seed with nothing usable committed.
+    seed_time_budget_seconds: float = 20.0
 
     #: A question that needs more steps than this is a report, not a
     #: question, and running away with it is how a bill arrives.

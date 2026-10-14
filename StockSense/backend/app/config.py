@@ -34,9 +34,6 @@ class Settings(BaseSettings):
 
     database_url: str = f"sqlite:///{(DATA_DIR / 'stocksense.db').as_posix()}"
 
-    #: Optional for a demonstration. Set it to anything long and random
-    #: anywhere else; the app refuses to start outside a demonstration
-    #: without one.
     jwt_secret: str = "demo-only-change-me-in-production"
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 12 * 60
@@ -48,12 +45,6 @@ class Settings(BaseSettings):
     model_name: str = ""
     model_max_tokens: int = 2048
     model_timeout_seconds: float = 45.0
-
-    #: On serverless hosting with SQLite (temporary storage), build a compact
-    #: demonstration company on the first request after a cold start, so the
-    #: deployment works with no database and no setup. Set
-    #: AUTO_LOAD_DEMO_DATA=false to start empty instead.
-    auto_load_demo_data: bool = True
 
     cors_origins: str = (
         "*" if SERVERLESS else "http://localhost:3002,http://127.0.0.1:3002"

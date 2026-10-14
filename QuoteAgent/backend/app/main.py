@@ -22,10 +22,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.concurrency import run_in_threadpool
-from starlette.types import ASGIApp, Receive, Scope, Send
 
-from . import __version__, bootstrap
+from . import __version__
 from .config import settings
 from .db import create_all
 from .routers import auth, cases, catalogue, demo, evaluation, system
@@ -75,25 +73,6 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-class ReadyBeforeFirstRequest:
-    """Hold requests until the database is ready.
-
-    Where storage is temporary that includes loading the demonstration data,
-    once per process, so the first page after a cold start already has data
-    and the demonstration accounts can sign in. It runs on the first request
-    rather than at start-up so it is bounded by the request time limit on any
-    host.
-    """
-
-    def __init__(self, app: ASGIApp) -> None:
-        self.app = app
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "http" and not bootstrap.is_ready():
-            await run_in_threadpool(bootstrap.ensure_ready)
-        await self.app(scope, receive, send)
-
-
 app = FastAPI(
     title="QuoteAgent",
     lifespan=lifespan,
@@ -121,7 +100,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(ReadyBeforeFirstRequest)
 
 app.include_router(auth.router)
 app.include_router(system.router)
@@ -154,3 +132,21 @@ def root() -> dict[str, str]:
 @app.exception_handler(ValueError)
 def value_error_handler(_request: Request, exc: ValueError) -> JSONResponse:
     return ExactJSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(Exception)
+def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Never let the function die with a bare traceback.
+
+    A cold start on a slow serverless function can hit all sorts of things
+    the specific handlers above do not expect: a database that is not ready
+    yet, a seed step that ran out of time, an import that failed. Whatever it
+    is, the caller gets a clean, small JSON body it can show instead of a
+    stack trace, and the real detail goes to the server log where whoever is
+    on call can read it.
+    """
+    log.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return ExactJSONResponse(
+        status_code=500,
+        content={"error": "internal_server_error", "message": str(exc)},
+    )

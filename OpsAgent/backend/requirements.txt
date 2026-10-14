@@ -19,3 +19,6 @@ httpx>=0.27,<1
 # persistent disk, so it needs a real database and this driver is not
 # optional there.
 psycopg[binary]>=3.2
+
+# --- sign-in form --------------------------------------------------------
+python-multipart>=0.0.20,<0.1   # OAuth2PasswordRequestForm on the sign-in route

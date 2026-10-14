@@ -14,7 +14,9 @@ something real to try to get around.
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import random
+import time
 from decimal import Decimal
 from typing import Any, Callable
 
@@ -41,6 +43,8 @@ from ..models import (
     User,
 )
 from ..security import hash_password
+
+log = logging.getLogger("opsagent")
 
 DEMO_PASSWORD = "demo1234"
 
@@ -306,6 +310,7 @@ class Builder:
         order_target: int = 1200,
         seed: int = 20261005,
         progress: ProgressCallback | None = None,
+        time_budget_seconds: float | None = None,
     ) -> None:
         self.session = session
         self.customer_target = customer_target
@@ -314,18 +319,52 @@ class Builder:
         self._progress = progress
         self.counts: dict[str, int] = {}
         self.today = today_date()
+        self._deadline = (
+            time.monotonic() + time_budget_seconds if time_budget_seconds else None
+        )
+        self._budget_logged = False
+
+    def _over_budget(self) -> bool:
+        """True once the time budget for the heavier steps has passed.
+
+        Checked between steps, not inside one, so a step either runs to
+        completion or not at all and nothing is left half-written. Logged
+        once, the first time it trips, so the deployment log says plainly
+        what was skipped and why rather than just looking incomplete.
+        """
+        if self._deadline is None or time.monotonic() <= self._deadline:
+            return False
+        if not self._budget_logged:
+            log.warning(
+                "Seeding the demonstration data passed its time budget; "
+                "the accounts and %s are in place, the rest is skipped so "
+                "the request can proceed instead of running into a "
+                "platform timeout.",
+                ", ".join(self.counts) or "no business data yet",
+            )
+            self._budget_logged = True
+        return True
 
     def build(self) -> dict[str, int]:
         self._clear()
         customers = self._customers()
         suppliers = self._suppliers()
-        self._parts(suppliers)
-        self._orders(customers)
-        self._stock_positions()
-        self._invoices(customers)
-        self._tickets(customers)
-        self._documents(customers, suppliers)
+        # Sign-in has to work even if the heavier catalogue below runs out
+        # of time, so the demo accounts are created — and grants wired up —
+        # right after the customers and suppliers they point at, before any
+        # of the bulk business data.
         self._people(customers, suppliers)
+        for step in (
+            lambda: self._parts(suppliers),
+            lambda: self._orders(customers),
+            lambda: self._stock_positions(),
+            lambda: self._invoices(customers),
+            lambda: self._tickets(customers),
+            lambda: self._documents(customers, suppliers),
+        ):
+            if self._over_budget():
+                break
+            step()
         self.session.flush()
         return self.counts
 
@@ -729,10 +768,12 @@ def build_demo_data(
     customer_target: int = 200,
     order_target: int = 1200,
     progress: ProgressCallback | None = None,
+    time_budget_seconds: float | None = None,
 ) -> dict[str, int]:
     return Builder(
         session,
         customer_target=customer_target,
         order_target=order_target,
         progress=progress,
+        time_budget_seconds=time_budget_seconds,
     ).build()

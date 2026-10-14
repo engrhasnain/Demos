@@ -23,8 +23,10 @@ against nothing proves nothing.
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import math
 import random
+import time
 from decimal import Decimal
 from typing import Any, Callable, Iterable
 
@@ -47,6 +49,8 @@ from ..models import (
 )
 from ..numbers import money
 from ..security import hash_password
+
+log = logging.getLogger("stocksense")
 
 DEMO_PASSWORD = "demo1234"
 
@@ -105,6 +109,7 @@ class Builder:
         supplier_target: int = 140,
         seed: int = 20261005,
         progress: ProgressCallback | None = None,
+        time_budget_seconds: float | None = None,
     ) -> None:
         self.session = session
         self.part_target = part_target
@@ -117,14 +122,40 @@ class Builder:
         # Series start on a Monday, so weeks line up with the ordering round.
         last_monday = self.today - dt.timedelta(days=self.today.weekday())
         self.starts_on = last_monday - dt.timedelta(weeks=self.weeks)
+        # A soft budget, checked between stages. It is advisory only: a stage
+        # already under way is let finish rather than aborted mid-write,
+        # which would leave a half-built company behind. It exists so a slow
+        # cold start on serverless hosting is logged clearly instead of the
+        # request simply vanishing into the platform's own hard timeout.
+        self._time_budget_seconds = time_budget_seconds
+        self._started_at = time.monotonic()
+        self._budget_warned = False
 
     def progress(self, stage: str, done: int, total: int) -> None:
+        self._check_budget(stage)
         if self._progress:
             self._progress(stage, done, total)
+
+    def _check_budget(self, stage: str) -> None:
+        if self._time_budget_seconds is None or self._budget_warned:
+            return
+        elapsed = time.monotonic() - self._started_at
+        if elapsed >= self._time_budget_seconds:
+            self._budget_warned = True
+            log.warning(
+                "Seeding is past its %.0fs time budget (%.1fs elapsed, now at stage %r). "
+                "Letting it run to completion instead of aborting mid-write.",
+                self._time_budget_seconds,
+                elapsed,
+                stage,
+            )
 
     # ------------------------------------------------------------------
     def build(self) -> dict[str, int]:
         self._clear()
+        # Auth/user accounts first and cheaply, so a sign-in page that polls
+        # for "is anybody loaded yet" sees people as soon as possible, well
+        # before the heavier business data below has a chance to run long.
         self._people()
         suppliers = self._suppliers()
         parts = self._parts(suppliers)
@@ -132,6 +163,12 @@ class Builder:
         self._supersessions(parts)
         self._buyers_orders(parts)
         self.session.flush()
+        if self._budget_warned:
+            log.warning(
+                "Seeding finished in %.1fs, over its %.0fs budget.",
+                time.monotonic() - self._started_at,
+                self._time_budget_seconds,
+            )
         return self.counts
 
     def _clear(self) -> None:
@@ -558,10 +595,12 @@ def build_demo_data(
     part_target: int = 18_000,
     supplier_target: int = 140,
     progress: ProgressCallback | None = None,
+    time_budget_seconds: float | None = None,
 ) -> dict[str, int]:
     return Builder(
         session,
         part_target=part_target,
         supplier_target=supplier_target,
         progress=progress,
+        time_budget_seconds=time_budget_seconds,
     ).build()

@@ -382,6 +382,15 @@ class DemoDataBuilder:
 
     # -- stages -----------------------------------------------------------
     def build(self) -> dict[str, int]:
+        # Deliberate order, and not just a convenient one: on a slow cold
+        # start (a function that pays for the Python runtime, the import of
+        # SQLAlchemy and Pydantic, and only then this), the sign-in accounts
+        # have to exist before anything that can run long or fail. Warehouses
+        # and users are cheap and go first; the 18,000 part catalogue, stock,
+        # cross-references, customers, contracts and duty tables are the
+        # heavier business data and go after. If this build is ever cut short
+        # by the caller's own time budget (see system.load_demo_data), sign-in
+        # already works even though the rest of the demonstration is thin.
         self.wipe()
         self.build_warehouses()
         self.build_users()

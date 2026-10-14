@@ -12,7 +12,9 @@ so the scheduler has something real to refuse.
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import random
+import time
 from decimal import Decimal
 from typing import Any, Callable
 
@@ -79,6 +81,8 @@ CARRIERS = ["Hsinchu Logistics", "T-Cat", "Kerry TJ", "FedEx", "DHL"]
 
 ProgressCallback = Callable[[str, int, int], None]
 
+log = logging.getLogger("frontdesk")
+
 
 class Builder:
     def __init__(
@@ -89,6 +93,7 @@ class Builder:
         order_target: int = 3600,
         seed: int = 20261005,
         progress: ProgressCallback | None = None,
+        deadline: float | None = None,
     ) -> None:
         self.session = session
         self.customer_target = customer_target
@@ -97,17 +102,47 @@ class Builder:
         self._progress = progress
         self.counts: dict[str, int] = {}
         self.today = today_date()
+        # A `time.monotonic()` instant past which the heavier, optional
+        # stages below are skipped rather than run. The demo accounts (from
+        # `_staff`, which always runs first) are what sign-in depends on, so
+        # tripping the budget loses sample business data, never the ability
+        # to log in. `None` means no budget - the manual "load demo data"
+        # endpoint for staff still gets the full, uncapped load.
+        self.deadline = deadline
+        self.timed_out = False
 
     def progress(self, stage: str, done: int, total: int) -> None:
         if self._progress:
             self._progress(stage, done, total)
 
+    def _over_budget(self, stage: str) -> bool:
+        if self.deadline is None or time.monotonic() <= self.deadline:
+            return False
+        self.timed_out = True
+        log.warning(
+            "Demo data load exceeded its time budget after '%s'; stopping "
+            "here so the request can proceed with what was loaded so far "
+            "(the demo accounts from 'staff' are already in place).",
+            stage,
+        )
+        return True
+
     def build(self) -> dict[str, int]:
         self._clear()
+        # Accounts first: as soon as this stage commits, sign-in works, even
+        # if every stage after it is cut short by the time budget.
         self._staff()
+        if self._over_budget("staff"):
+            return self.counts
         customers = self._customers()
+        if self._over_budget("customers"):
+            return self.counts
         self._orders(customers)
+        if self._over_budget("orders"):
+            return self.counts
         self._quotations(customers)
+        if self._over_budget("quotations"):
+            return self.counts
         self._technicians()
         self.session.flush()
         return self.counts
@@ -353,12 +388,14 @@ def build_demo_data(
     customer_target: int = 1200,
     order_target: int = 3600,
     progress: ProgressCallback | None = None,
+    deadline: float | None = None,
 ) -> dict[str, int]:
     return Builder(
         session,
         customer_target=customer_target,
         order_target=order_target,
         progress=progress,
+        deadline=deadline,
     ).build()
 
 

@@ -36,16 +36,7 @@ class Settings(BaseSettings):
     # PostgreSQL 16:  postgresql+psycopg://user:pass@localhost:5432/quoteagent
     database_url: str = f"sqlite:///{(DATA_DIR / 'quoteagent.db').as_posix()}"
 
-    # Fill an empty database with the demonstration data on the first request.
-    # Left unset it happens only where storage is temporary (serverless plus
-    # SQLite), so a deployment opens with data and nothing to set up. "true"
-    # turns it on anywhere, "false" turns it off.
-    auto_load_demo_data: str = ""
-    auto_load_product_target: int = 1_000
-    auto_load_customer_target: int = 80
-
-    # Sign-in. The demo accounts are created by the data loader. Optional for a
-    # demonstration; set JWT_SECRET for anything else.
+    # Sign-in. The demo accounts are created by the data loader.
     jwt_secret: str = "demo-only-change-me-in-production"
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 12 * 60
@@ -118,15 +109,6 @@ class Settings(BaseSettings):
         come back after lunch and find an empty database with no explanation.
         """
         return SERVERLESS and self.uses_sqlite
-
-    @property
-    def should_auto_load_demo_data(self) -> bool:
-        value = self.auto_load_demo_data.strip().lower()
-        if value in {"1", "true", "yes", "on"}:
-            return True
-        if value in {"0", "false", "no", "off"}:
-            return False
-        return self.storage_is_temporary
 
 
 @lru_cache

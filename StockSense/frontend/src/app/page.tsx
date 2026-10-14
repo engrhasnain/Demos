@@ -28,7 +28,7 @@ import {
 import type { Dashboard, DemoState, Page, PartDetail, PlanLine, PlanRun, Replay, Settings, Shutdown } from "@/lib/types";
 
 export default function DeskPage() {
-  const state = useLoad<DemoState>("/api/demo/state");
+  const state = useLoad<DemoState>("/api/demo/state", [], { retry: true });
   const [rebuild, setRebuild] = useState(false);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function DeskPage() {
     return (
       <Band top>
         <div style={{ padding: "40px 0" }}>
-          <ErrorNote error={state.error} />
+          <ErrorNote error={state.error} onRetry={state.reload} />
         </div>
       </Band>
     );

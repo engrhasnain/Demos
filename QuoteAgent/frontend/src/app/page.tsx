@@ -19,7 +19,7 @@ import { QuoteAssembly, useAssemblyStage } from "@/components/quote-assembly";
 import { MiniRail } from "@/components/case-progress";
 import { FirstRun } from "@/components/first-run";
 import { ClosingBand } from "@/components/closing-band";
-import { ErrorNote, Loading, isLive, statusTone } from "@/components/ui";
+import { Banner, Button, Loading, isLive, statusTone } from "@/components/ui";
 
 type Queue = {
   status: string;
@@ -44,7 +44,7 @@ type Flight = { detail: CaseDetail; engine: string };
 
 export default function OverviewPage() {
   const router = useRouter();
-  const status = useLoad<SystemStatus>("/api/system/status");
+  const status = useLoad<SystemStatus>("/api/system/status", [], { autoRetry: true });
   const { reload } = status;
   // On a first run nobody is signed in: the accounts exist only now.
   const loaded = useCallback(() => {
@@ -62,7 +62,17 @@ export default function OverviewPage() {
   if (status.error) {
     return (
       <Band top>
-        <ErrorNote error={status.error} />
+        <Banner
+          tone="fail"
+          title="Couldn't load"
+          action={
+            <Button tone="secondary" onClick={status.reload}>
+              Retry
+            </Button>
+          }
+        >
+          {status.error}
+        </Banner>
       </Band>
     );
   }
@@ -112,8 +122,8 @@ function engineOf(events: CaseEvent[]): string {
 /* The working dashboard                                               */
 /* ------------------------------------------------------------------ */
 function Dashboard({ status }: { status: SystemStatus }) {
-  const board = useLoad<Board>("/api/system/dashboard");
-  const recent = useLoad<{ cases: CaseSummary[] }>("/api/cases?limit=100");
+  const board = useLoad<Board>("/api/system/dashboard", [], { autoRetry: true });
+  const recent = useLoad<{ cases: CaseSummary[] }>("/api/cases?limit=100", [], { autoRetry: true });
   const data = board.data;
   const cases = useMemo(() => recent.data?.cases ?? [], [recent.data]);
   const flight = useMemo(() => pickFlight(cases), [cases]);
@@ -122,7 +132,19 @@ function Dashboard({ status }: { status: SystemStatus }) {
     <div>
       <Hero status={status} board={data} cases={cases} flight={flight} />
       <div className="ds-work">
-        {board.error && <ErrorNote error={board.error} />}
+        {board.error && (
+          <Banner
+            tone="fail"
+            title="Couldn't load"
+            action={
+              <Button tone="secondary" onClick={board.reload}>
+                Retry
+              </Button>
+            }
+          >
+            {board.error}
+          </Banner>
+        )}
         <Queues board={data} cases={cases} />
         <Recent cases={cases} loading={recent.loading} total={data?.total_cases} />
       </div>

@@ -19,16 +19,6 @@ const NAV = [
   { href: "/evidence", label: "Evidence" },
 ];
 
-/** The six products of the suite, for the footer. */
-const SUITE = [
-  { name: "QuoteAgent", colour: "#f5a524" },
-  { name: "LedgerFlow", colour: "#10b981", here: true },
-  { name: "StockSense", colour: "#2f6bff" },
-  { name: "FrontDeskAI", colour: "#ff6b4a" },
-  { name: "PortalBot", colour: "#8b5cf6" },
-  { name: "OpsAgent", colour: "#14b8a6" },
-];
-
 /** Invoice, purchase order and delivery joined into a triangle, and the ledger. */
 export function BrandMark({ size = 32 }: { size?: number }) {
   return (
@@ -167,7 +157,7 @@ export function Shell({ children }: { children: ReactNode }) {
   };
 
   const notice = state?.storage_is_temporary
-    ? "Demonstration data — resets when the server restarts."
+    ? "This copy keeps its data in the function's scratch space. It goes away when the function does."
     : null;
 
   const nav = NAV.map((item) => ({
@@ -207,15 +197,6 @@ export function Shell({ children }: { children: ReactNode }) {
             <span style={{ fontSize: 13, color: "var(--ds-ink-muted)" }}>
               Fictional company, generated data. Every number opens.
             </span>
-          </div>
-          <div className="lf-suite">
-            <span className="ds-mono-label">Hengtai operations suite</span>
-            {SUITE.map((product) => (
-              <span key={product.name} className="lf-suite-item" data-here={product.here ? "" : undefined}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: product.colour }} aria-hidden />
-                {product.name}
-              </span>
-            ))}
           </div>
         </div>
       </footer>

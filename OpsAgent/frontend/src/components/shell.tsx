@@ -22,15 +22,6 @@ const NAV: { href: string; label: string; role?: string }[] = [
   { href: "/assurance", label: "Assurance" },
 ];
 
-const SUITE = [
-  { name: "QuoteAgent", colour: "#f86f11" },
-  { name: "LedgerFlow", colour: "#10b981" },
-  { name: "StockSense", colour: "#2f6bff" },
-  { name: "FrontDeskAI", colour: "#ff6b4a" },
-  { name: "PortalBot", colour: "#8b5cf6" },
-  { name: "OpsAgent", colour: "#14b8a6", here: true },
-];
-
 /** The core with five systems around it, inside a ring. */
 export function BrandMark({ size = 32 }: { size?: number }) {
   const spokes = [0, 1, 2, 3, 4].map((index) => {
@@ -336,15 +327,6 @@ export function Shell({ children }: { children: ReactNode }) {
             <span className="ds-mono" style={{ fontSize: 11.5, color: "var(--ds-ink-faint)" }}>
               {health ? `${health.capabilities} reviewed queries · ${health.engine === "built-in" ? "built-in engine" : "external model"} · nothing is ever written` : "OpsAgent"}
             </span>
-          </div>
-          <div className="oa-suite">
-            <span className="ds-mono-label">Hengtai operations suite</span>
-            {SUITE.map((product) => (
-              <span key={product.name} data-here={product.here ? "" : undefined}>
-                <i style={{ background: product.colour }} aria-hidden />
-                {product.name}
-              </span>
-            ))}
           </div>
         </div>
       </footer>

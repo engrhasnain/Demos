@@ -26,7 +26,7 @@ from ..models import (
     Supplier,
     User,
 )
-from ..security import ROLE_LABELS, get_current_user, oauth2_scheme, require_role
+from ..security import ROLE_LABELS, get_current_user, require_role
 from ..seed import generator
 from ..serializers import dashboard
 from ..services.reorder import DECISION_LABELS, REASON_LABELS
@@ -151,37 +151,22 @@ SIZES: dict[str, tuple[int, int]] = {
 }
 
 
-def _may_load(
-    token: str | None = Depends(oauth2_scheme),
-    session: Session = Depends(get_session),
-) -> None:
-    """Open while the database is empty, administrator only after that.
-
-    With nobody in the database there is nobody who could sign in, so the
-    first load has to be possible without signing in. Once there is a
-    company, rebuilding it wipes everybody's work and only the
-    administrator may do it.
-    """
-    people = session.scalar(select(func.count(User.id))) or 0
-    parts = session.scalar(select(func.count(Part.id))) or 0
-    if people == 0 and parts == 0:
-        return
-    user = get_current_user(token=token, session=session)
-    require_role("administrator")(user=user)
-
-
 @router.post("/demo/load")
 def load_demo(
     body: LoadRequest,
     session: Session = Depends(get_session),
-    _allowed: None = Depends(_may_load),
+    _user: User = Depends(require_role("administrator")),
 ) -> dict[str, Any]:
     parts, suppliers = SIZES.get(body.size, SIZES["full"])
     if settings.is_serverless and parts > 6_000:
         parts, suppliers = SIZES["medium"]
+    # On serverless hosting the platform's own request timeout is the real
+    # deadline. A soft budget well inside it means a slow cold start is
+    # logged clearly rather than the function simply being killed mid-write.
+    budget = 22.0 if settings.is_serverless else None
     started = time.perf_counter()
     counts = generator.build_demo_data(
-        session, part_target=parts, supplier_target=suppliers
+        session, part_target=parts, supplier_target=suppliers, time_budget_seconds=budget
     )
     return {
         "seconds": round(time.perf_counter() - started, 2),
