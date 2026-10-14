@@ -1,0 +1,21 @@
+# --- core ---------------------------------------------------------------
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.34,<0.35
+pydantic>=2.10,<3
+pydantic-settings>=2.7,<3
+SQLAlchemy>=2.0.36,<2.1
+
+# Sign-in uses only the standard library (pbkdf2 and hmac), so there is no
+# password or token package to install and nothing that needs a compiler.
+
+# --- the wording engine -------------------------------------------------
+# Every quantity on screen is produced by the forecasting code. A model, if
+# one is configured, only ever writes words. The call is plain HTTP, so no
+# provider package is required and no provider is assumed.
+httpx>=0.27,<1
+
+# --- PostgreSQL ---------------------------------------------------------
+# SQLite is the default for local work. A serverless deployment has no
+# persistent disk, so it needs a real database and this driver is not
+# optional there.
+psycopg[binary]>=3.2

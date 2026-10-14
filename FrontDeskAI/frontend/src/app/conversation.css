@@ -1,0 +1,488 @@
+/* ==================================================================== */
+/* THE CONVERSATION - FrontDesk's own concept                            */
+/*                                                                       */
+/* FrontDesk talks to customers, so it is warm and light: soft peach      */
+/* surfaces, coral, round shapes, pill controls and a rounded face. The   */
+/* live conversation is the hero; the two-channel constellation with the  */
+/* identity ring is the signature. Solid colours only.                   */
+/* ==================================================================== */
+html[data-product="frontdeskai"] {
+  --ds-face-ui: var(--fd-face);
+  --ds-page: #fff8f4;
+  --ds-surface: #ffffff;
+  --ds-sunk: #fbede6;
+  --ds-line: #f1dfd6;
+  --ds-line-strong: #e2c6ba;
+  --ds-text: #2a1714;
+  --ds-text-2: #5e4741;
+  --ds-text-3: #745c55;
+  --ds-radius: 22px;
+  --ds-radius-sm: 14px;
+  --ds-radius-control: 999px;
+  --ds-radius-chip: 999px;
+  --ds-shadow-card: 0 1px 2px rgba(120, 60, 40, 0.05), 0 10px 28px -20px rgba(150, 70, 40, 0.35);
+  --ds-shadow-lift: 0 26px 50px -26px rgba(170, 70, 40, 0.45);
+  background: var(--ds-page);
+}
+
+/* Every "ink" surface (bands, header, the scene card, sign-in art) becomes
+   a warm light surface with dark text, by re-pointing the suite's ink
+   variables inside it. */
+.ds-band,
+.ds-header,
+.ds-menu-sheet,
+.fd-scene-card,
+.fd-signin-art,
+.fd-chatbox-head,
+.ds-feed {
+  --ds-ink: #ffefe8;
+  --ds-ink-2: #ffffff;
+  --ds-ink-3: #ffe4da;
+  --ds-ink-line: #f3d2c5;
+  --ds-ink-text: #2a1714;
+  --ds-ink-muted: #654a43;
+  --ds-ink-faint: #775950;
+}
+.ds-header {
+  --ds-ink: #fffaf7;
+}
+.ds-header-top {
+  background: #ffe4da !important;
+  border-bottom-color: #f3d2c5 !important;
+}
+.ds-header[data-solid] {
+  box-shadow: 0 10px 30px -24px rgba(150, 70, 40, 0.5);
+}
+.fd-chatbox-head {
+  --ds-ink: #ffffff;
+  border-bottom: 1px solid var(--ds-line);
+}
+.ds-band .ds-accent-text,
+.ds-band .ds-stat-value[data-tone="accent"],
+.fd-progress-number,
+.fd-closing-title .fd-light {
+  color: var(--ds-accent-ink) !important;
+}
+.ds-band .ds-stat-value[data-tone="warn"] {
+  color: var(--ds-warn-ink);
+}
+.ds-band .ds-stat-value[data-tone="fail"] {
+  color: var(--ds-fail-ink);
+}
+.ds-band .ds-stat-value[data-tone="pass"] {
+  color: var(--ds-pass-ink);
+}
+.ds-band .ds-figure:hover {
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-ink);
+}
+.ds-band :focus-visible,
+.ds-header :focus-visible {
+  outline-color: var(--ds-accent-ink);
+}
+
+/* a friendly, rounded face */
+.ds-display {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.ds-title,
+.ds-card-title,
+.fd-brand-name {
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+.fd-light {
+  font-weight: 400;
+}
+body {
+  font-size: 14.5px;
+}
+
+/* round shapes */
+.ds-card::before,
+.fd-intent::before,
+.fd-ticket-card::before,
+.fd-return-card::before {
+  display: none;
+}
+.ds-card,
+.fd-intent,
+.fd-ticket-card,
+.fd-return-card,
+.fd-family,
+.fd-criterion,
+.fd-walk,
+.fd-scene-card,
+.fd-progress,
+.fd-first-stages,
+.fd-run-panel,
+.fd-desk-stats {
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow-card);
+}
+.fd-criterion {
+  overflow: hidden;
+}
+.ds-stamp {
+  background: #fbe4da !important;
+  color: #7a2e12 !important;
+  box-shadow: none !important;
+  padding: 0 9px;
+}
+.ds-meter,
+.ds-meter-fill {
+  border-radius: 999px;
+}
+.ds-input {
+  border-radius: 999px;
+  padding: 0 16px;
+}
+textarea.ds-input,
+select.ds-input {
+  border-radius: 16px;
+}
+/* a large solid soft shape behind the top band, for warmth */
+.ds-band[data-top]::before {
+  content: "";
+  position: absolute;
+  right: -12vw;
+  top: -18vw;
+  width: 46vw;
+  height: 46vw;
+  border-radius: 50%;
+  background: #ffe2d6;
+  z-index: 0;
+  pointer-events: none;
+}
+.fd-signin-art::before {
+  content: "";
+  position: absolute;
+  left: -10vw;
+  bottom: -16vw;
+  width: 40vw;
+  height: 40vw;
+  border-radius: 50%;
+  background: #ffe2d6;
+}
+.fd-brand-mark {
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px var(--ds-accent);
+}
+.fd-account-button,
+.fd-chatbox-new,
+.fd-photo,
+.fd-person,
+.fd-quick-reply,
+.fd-filter button,
+.ds-menu-button,
+.ds-close {
+  border-radius: 999px;
+}
+.fd-size-option {
+  border-radius: 18px;
+}
+.fd-walk-say {
+  border-radius: 14px;
+}
+
+/* the conversation */
+.fd-chatbox,
+.fd-phone {
+  border-radius: 28px;
+  box-shadow: 0 40px 80px -46px rgba(170, 70, 40, 0.6);
+}
+.fd-phone {
+  border-color: #ffffff;
+  border-width: 9px;
+  border-radius: 38px;
+  background: #f4f7f5;
+  outline: 1px solid var(--ds-line-strong);
+}
+.fd-thread {
+  background: #fffaf7;
+}
+.fd-phone .fd-thread {
+  background: #edf3f0;
+}
+.fd-bubble {
+  font-size: 14.5px;
+}
+.fd-bubble[data-side="customer"] {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  border-radius: 22px 22px 6px 22px;
+}
+.fd-bubble[data-side="desk"] {
+  border-radius: 6px 22px 22px 22px;
+  box-shadow: 0 6px 18px -14px rgba(150, 70, 40, 0.45);
+}
+.fd-card-rich,
+.fd-held,
+.fd-slot,
+.fd-handover,
+.fd-ticket,
+.fd-gap,
+.fd-decision,
+.fd-verify {
+  border-radius: 18px;
+}
+.fd-card-rich,
+.fd-held {
+  border-left-width: 1px;
+  box-shadow: inset 4px 0 0 var(--ds-pass);
+}
+.fd-card-rich[data-tone="warn"] {
+  box-shadow: inset 4px 0 0 var(--ds-warn);
+}
+.fd-held {
+  box-shadow: inset 4px 0 0 var(--ds-fail);
+}
+.fd-slot {
+  border-top-width: 1px;
+  box-shadow: inset 0 4px 0 var(--ds-pass);
+}
+.fd-booked {
+  background: var(--ds-pass-soft);
+  color: var(--ds-text);
+  border: 1px solid #b9e8c9;
+  border-radius: 22px;
+}
+.fd-booked .ds-mono-label {
+  color: var(--ds-pass-ink);
+}
+.fd-booked-who {
+  color: var(--ds-text-2);
+}
+.fd-handover,
+.fd-ticket {
+  border-left-width: 1px;
+}
+.fd-verify {
+  border-left-width: 1px;
+  box-shadow: inset 4px 0 0 var(--ds-accent), 0 18px 40px -30px rgba(var(--ds-accent-rgb), 0.9);
+}
+.fd-verify[data-state="ok"] {
+  box-shadow: inset 4px 0 0 var(--ds-pass);
+}
+.fd-verify[data-state="failed"] {
+  box-shadow: inset 4px 0 0 var(--ds-fail);
+}
+.fd-desk-avatar,
+.fd-chatbox-avatar {
+  background: var(--ds-accent-soft);
+}
+
+/* the live conversation on the home hero */
+.fd-live {
+  position: relative;
+  border-radius: 28px;
+  border: 1px solid var(--ds-line);
+  background: #ffffff;
+  box-shadow: 0 46px 90px -50px rgba(170, 70, 40, 0.65);
+  overflow: hidden;
+  color: var(--ds-text);
+}
+.fd-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 12px;
+}
+.fd-live-head .ds-mono-label {
+  color: var(--ds-text);
+  letter-spacing: 0.16em;
+}
+.fd-live-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--ds-font-mono);
+  font-size: 11px;
+  color: var(--ds-text-3);
+}
+.fd-live-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 0 20px;
+}
+.fd-live-stamp {
+  font-family: var(--ds-font-mono);
+  font-size: 11.5px;
+  color: var(--ds-text-3);
+}
+.fd-live-title {
+  margin: 10px 0 0;
+  padding: 0 20px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.fd-live-intent {
+  margin: 2px 0 0;
+  padding: 0 20px;
+  font-size: 13px;
+  color: var(--ds-text-2);
+}
+.fd-live-thread {
+  margin-top: 14px;
+  height: 340px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  overflow: hidden;
+  background: #fffaf7;
+  border-top: 1px solid var(--ds-line);
+  border-bottom: 1px solid var(--ds-line);
+}
+.fd-live-thread .fd-msg[data-side="desk"] {
+  width: 94%;
+}
+.fd-live-thread .fd-bubble {
+  font-size: 13.5px;
+  padding: 9px 13px;
+}
+.fd-live-thread .fd-msg-meta {
+  margin-top: 4px;
+}
+.fd-live-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px 14px;
+}
+.fd-live-dashes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fd-live-dash {
+  position: relative;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: width 400ms var(--ds-ease);
+}
+.fd-live-dash::before,
+.fd-live-dash i {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 5px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ds-line);
+}
+.fd-live-dash i {
+  background: var(--ds-accent);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  transition: transform 600ms var(--ds-ease);
+}
+.fd-live-dash[data-state="done"] i {
+  transform: scaleX(1);
+  opacity: 0.45;
+}
+.fd-live-dash[data-state="active"] {
+  width: 38px;
+}
+.fd-live-dash[data-state="active"] i {
+  transform: scaleX(var(--fd-progress, 0));
+}
+.fd-live-link {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ds-accent-ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.fd-live-link:hover {
+  text-decoration: underline;
+}
+
+/* the signature strip under the hero */
+.fd-signature {
+  position: relative;
+  margin-top: 30px;
+  border-radius: 28px;
+  border: 1px solid var(--ds-ink-line);
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: var(--ds-shadow-card);
+}
+.fd-signature-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding: 16px 22px 0;
+}
+.fd-signature-title {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+.fd-signature-canvas {
+  position: relative;
+  height: 430px;
+}
+.fd-signature .fd-legend {
+  position: static;
+  padding: 0;
+  color: var(--ds-text-3);
+}
+.fd-legend i {
+  background: #4a5060;
+}
+.fd-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr) !important;
+  min-height: 0 !important;
+  align-items: center !important;
+}
+.fd-hero-stage {
+  min-height: 0 !important;
+  padding: 24px 0;
+}
+.fd-scene-card-canvas {
+  background: #fffaf7;
+}
+@media (max-width: 1080px) {
+  .fd-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+@media (max-width: 640px) {
+  .fd-signature-canvas {
+    height: 380px;
+  }
+  .fd-live-thread {
+    height: 300px;
+  }
+  .ds-band[data-top]::before {
+    width: 80vw;
+    height: 80vw;
+    top: -30vw;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fd-live-dash,
+  .fd-live-dash i {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# The generated database and anything written at runtime
+backend/var/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Editors and hosts
+.vercel
+.env
+.env.local
+.DS_Store
+backend/var/

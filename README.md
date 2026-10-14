@@ -1,6 +1,6 @@
 # Demos
 
-Three working products for **Hengtai Industrial Supply**, a fictional Taiwan–US distributor of industrial
+Six working products for **Hengtai Industrial Supply**, a fictional Taiwan–US distributor of industrial
 fasteners, bearings and pneumatic components. Each folder is a complete product: a **FastAPI** backend and a
 **Next.js** interface.
 
@@ -9,6 +9,9 @@ fasteners, bearings and pneumatic components. Each folder is a complete product:
 | **QuoteAgent** | [`QuoteAgent/`](QuoteAgent/) | Turns a messy, multi-line request for quotation into a priced, approved quote the same day. It asks instead of guessing and never invents a price. |
 | **LedgerFlow** | [`LedgerFlow/`](LedgerFlow/) | Reads supplier invoices, checks them against the purchase order and the delivery, routes approvals and posts to the ledger — without ever paying the same invoice twice. |
 | **StockSense** | [`StockSense/`](StockSense/) | Forecasts demand and recommends what to reorder under a weekly cash cap, for thousands of parts that mostly sell nothing, around supplier shutdowns. |
+| **FrontDeskAI** | [`FrontDeskAI/`](FrontDeskAI/) | Answers customer questions around the clock on web and LINE, verifies identity before showing any account data, and books a technician visit or hands over to a person. |
+| **PortalBot** | [`PortalBot/`](PortalBot/) | Books every shipment in a carrier portal with no API and writes the tracking number back into a legacy order screen, without booking twice and without silently continuing when a screen changes. |
+| **OpsAgent** | [`OpsAgent/`](OpsAgent/) | Answers cross-system questions about the business from reviewed, role-scoped queries, with every number traced back to where it came from. |
 
 Every product runs with no key and no account: a deterministic built-in engine does the work, every number on
 screen can be clicked to show how it was worked out, and each product ships its acceptance checks as tests.
@@ -16,7 +19,7 @@ screen can be clicked to show how it was worked out, and each product ships its 
 ## Run one locally
 
 ```bash
-cd QuoteAgent            # or LedgerFlow, StockSense
+cd QuoteAgent            # or any of the other five
 
 # terminal one: the backend
 python -m venv .venv
@@ -36,6 +39,9 @@ Open the interface, press **Load the demonstration data**, then sign in as
 | QuoteAgent | http://localhost:3000 | http://localhost:8000 |
 | LedgerFlow | http://localhost:3001 | http://localhost:8001 |
 | StockSense | http://localhost:3002 | http://localhost:8002 |
+| FrontDeskAI | http://localhost:3003 | http://localhost:8003 |
+| PortalBot | http://localhost:3004 | http://localhost:8004 |
+| OpsAgent | http://localhost:3005 | http://localhost:8005 |
 
 ## Deploy on Vercel
 
@@ -54,4 +60,4 @@ demonstration.
 **Optional upgrade:** to keep the data, set `DATABASE_URL` to a PostgreSQL database
 (`postgresql+psycopg://user:password@host/database`) and `JWT_SECRET` to a long random string, then redeploy.
 
-Details: [`QuoteAgent/docs/deploying-to-vercel.md`](QuoteAgent/docs/deploying-to-vercel.md).
+Details: each product's own `docs/deploying-to-vercel.md`.

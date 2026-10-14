@@ -1,0 +1,25 @@
+{
+  "name": "portalbot-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PortalBot: two systems with no way in but the screen, driven without duplicates.",
+  "scripts": {
+    "dev": "next dev -p 3004",
+    "build": "next build",
+    "start": "next start -p 3004",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^15.5.27",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "22.10.5",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "5.7.3"
+  }
+}
